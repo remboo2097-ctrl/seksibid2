@@ -648,7 +648,7 @@ Inti Peran: Sekbid 2 saat ini bertindak sebagai garda terdepan yang memastikan s
     // Load documents from Supabase table 'documents'
     async function loadDocuments() {
         try {
-            const { data, error } = await supabaseClient.from('doc').select('*').order('id', { ascending: false });
+            const { data, error } = await supabaseClient.from('documents').select('*').order('id', { ascending: false });
             if (error) throw error;
             documents = data || [];
             updateDocumentDisplay();
