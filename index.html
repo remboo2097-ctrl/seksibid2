@@ -179,6 +179,16 @@
             <!-- Foto Gallery -->
             <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
                 <h3 class="text-xl font-semibold text-gray-800 mb-4">📸 Galeri Foto</h3>
+                              
+                <div class="mb-4">
+  <input 
+    type="text" 
+    id="photo-search" 
+    placeholder=" Cari nama foto..." 
+    class="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+  >
+                                </div>
+                
                 <div id="photo-count" class="text-sm text-gray-500 mb-4">Total foto: 0</div>
                 <div id="photo-gallery" class="photo-gallery overflow-x-auto pb-4">
                     <div id="photo-container" class="flex space-x-4 min-w-max"></div>
@@ -657,18 +667,126 @@ Inti Peran: Sekbid 2 saat ini bertindak sebagai garda terdepan yang memastikan s
         }
     }
 
-    // Update photo gallery (render)
-    function updatePhotoGallery() {
-        const container = document.getElementById('photo-container');
-        const countDiv = document.getElementById('photo-count');
-        countDiv.textContent = `Total foto: ${photos.length}`;
-        if (photos.length === 0) {
-            container.innerHTML = `\n                <div class="text-center text-gray-400 py-20 px-8">\n                    <div class="text-6xl mb-4">📷</div>\n                    <p>Belum ada foto yang diupload</p>\n                    <p class="text-sm mt-2">Silakan login sebagai admin untuk upload foto</p>\n                </div>\n            `;
-            return;
-        }
-        container.innerHTML = photos.map(photo => `\n            <div class="flex-shrink-0 bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 slide-in" style="width: 300px;">\n                <img src="${photo.url}" alt="${photo.title}" class="w-full h-48 object-cover">\n                <div class="p-4">\n                    <h3 class="font-semibold text-gray-800 mb-2 truncate">${photo.title}</h3>\n                    <div class="text-sm text-gray-600 space-y-1">\n                        <p>📅 ${photo.date}</p>\n                        <p>⏰ ${new Date(photo.upload_date).toLocaleString('id-ID')}</p>\n                    </div>\n                    <div class="flex justify-between items-center mt-3">\n                        <a href="${photo.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">📥 Lihat</a>\n                        ${isAdminLoggedIn() ? `<button onclick="deletePhoto(${photo.id}, '${photo.url.split('/').pop()}')" class="text-red-500 hover:text-red-700 text-sm font-medium">🗑️ Hapus</button>` : ''}\n                    </div>\n                </div>\n            </div>\n        `).join('');
+        // Update photo gallery (render)
+    // === PENCARIAN FOTO DENGAN DEBOUNCE + ANIMASI LOADING ===
+
+// Render bertahap untuk mencegah frame drop
+function renderInChunks(list, container, chunkSize = 12) {
+  container.innerHTML = '';
+  let index = 0;
+
+  function renderChunk() {
+    const slice = list.slice(index, index + chunkSize);
+    const html = slice.map(photo => `
+      <div class="flex-shrink-0 bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 slide-in" style="width: 300px;">
+        <img src="${photo.url}" alt="${photo.title}" class="w-full h-48 object-cover">
+        <div class="p-4">
+          <h3 class="font-semibold text-gray-800 mb-2 truncate">${photo.title}</h3>
+          <div class="text-sm text-gray-600 space-y-1">
+            <p>📅 ${photo.date}</p>
+            <p>⏰ ${new Date(photo.upload_date).toLocaleString('id-ID')}</p>
+          </div>
+          <div class="flex justify-between items-center mt-3">
+            <a href="${photo.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">📥 Lihat</a>
+            ${isAdminLoggedIn() ? `<button onclick="deletePhoto(${photo.id}, '${photo.url.split('/').pop()}')" class="text-red-500 hover:text-red-700 text-sm font-medium">🗑️ Hapus</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    container.insertAdjacentHTML('beforeend', html);
+    index += chunkSize;
+    if (index < list.length) requestAnimationFrame(renderChunk);
+  }
+
+  requestAnimationFrame(renderChunk);
+}
+
+
+// Fungsi utama render galeri
+function updatePhotoGallery(showLoading = true) {
+  const container = document.getElementById('photo-container');
+  const countDiv = document.getElementById('photo-count');
+  const searchInput = document.getElementById('photo-search');
+
+  // tampilkan spinner loading
+  if (showLoading) {
+    container.innerHTML = `
+      <div class="flex flex-col justify-center items-center w-full py-10 text-gray-500">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-4 border-blue-600 mb-3"></div>
+        <span>Memuat galeri...</span>
+      </div>
+    `;
+  }
+
+  setTimeout(() => {
+    let filteredPhotos = photos;
+
+    // Jika ada input pencarian, filter berdasarkan nama/title foto
+    if (searchInput && searchInput.value.trim() !== '') {
+      const keyword = searchInput.value.toLowerCase();
+      filteredPhotos = photos.filter(photo =>
+        photo.title.toLowerCase().includes(keyword) ||
+        (photo.url && photo.url.toLowerCase().includes(keyword))
+      );
     }
 
+    countDiv.textContent = `Total foto: ${filteredPhotos.length}`;
+
+    if (filteredPhotos.length === 0) {
+      container.innerHTML = `
+        <div class="text-center text-gray-400 py-20 px-8">
+          <div class="text-6xl mb-4">📷</div>
+          <p>Tidak ada foto ditemukan.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Jika banyak foto, gunakan render bertahap
+    if (filteredPhotos.length > 25) {
+      renderInChunks(filteredPhotos, container, 12);
+    } else {
+      container.innerHTML = filteredPhotos.map(photo => `
+        <div class="flex-shrink-0 bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 slide-in" style="width: 300px;">
+          <img src="${photo.url}" alt="${photo.title}" class="w-full h-48 object-cover">
+          <div class="p-4">
+            <h3 class="font-semibold text-gray-800 mb-2 truncate">${photo.title}</h3>
+            <div class="text-sm text-gray-600 space-y-1">
+              <p>📅 ${photo.date}</p>
+              <p>⏰ ${new Date(photo.upload_date).toLocaleString('id-ID')}</p>
+            </div>
+            <div class="flex justify-between items-center mt-3">
+              <a href="${photo.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">📥 Lihat</a>
+              ${isAdminLoggedIn() ? `<button onclick="deletePhoto(${photo.id}, '${photo.url.split('/').pop()}')" class="text-red-500 hover:text-red-700 text-sm font-medium">🗑️ Hapus</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+  }, 200);
+}
+
+
+// === Debounce input agar tidak lag ===
+let searchTimeout;
+document.getElementById('photo-search')?.addEventListener('input', () => {
+  clearTimeout(searchTimeout);
+
+  const container = document.getElementById('photo-container');
+  container.innerHTML = `
+    <div class="flex flex-col justify-center items-center w-full py-10 text-gray-500">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-4 border-blue-600 mb-3"></div>
+      <span>Mencari foto...</span>
+    </div>
+  `;
+
+  searchTimeout = setTimeout(() => {
+    updatePhotoGallery(false);
+  }, 400); // 400ms jeda agar halus
+});
+
+        
     // Update document displays
     function updateDocumentDisplay() {
         updateDocumentGrid();
