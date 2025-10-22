@@ -180,14 +180,25 @@
             <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
                 <h3 class="text-xl font-semibold text-gray-800 mb-4">📸 Galeri Foto</h3>
                               
-                <div class="mb-4">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 space-y-3 md:space-y-0">
   <input 
     type="text" 
     id="photo-search" 
-    placeholder=" Cari nama foto..." 
+    placeholder="🔍 Cari nama foto..." 
     class="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
   >
-                                </div>
+
+  <select 
+    id="photo-sort" 
+    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+  >
+    <option value="date_desc">📅 Tanggal Terbaru</option>
+    <option value="date_asc">📅 Tanggal Terlama</option>
+    <option value="name_asc">🔤 Judul A–Z</option>
+    <option value="name_desc">🔤 Judul Z–A</option>
+  </select>
+                </div>
+                
                 
                 <div id="photo-count" class="text-sm text-gray-500 mb-4">Total foto: 0</div>
                 <div id="photo-gallery" class="photo-gallery overflow-x-auto pb-4">
@@ -721,6 +732,29 @@ function updatePhotoGallery(showLoading = true) {
 
   setTimeout(() => {
     let filteredPhotos = photos;
+// === SORTING FOTO ===
+// Ambil pilihan dari dropdown
+const sortSelect = document.getElementById('photo-sort');
+const sortBy = sortSelect ? sortSelect.value : 'date_desc';
+
+// Duplikat array agar tidak ubah data asli
+filteredPhotos = [...filteredPhotos];
+
+// Jalankan sorting sesuai pilihan user
+switch (sortBy) {
+  case 'date_asc': // tanggal kegiatan lama ke baru
+    filteredPhotos.sort((a, b) => new Date(a.date) - new Date(b.date));
+    break;
+  case 'date_desc': // tanggal kegiatan baru ke lama
+    filteredPhotos.sort((a, b) => new Date(b.date) - new Date(a.date));
+    break;
+  case 'name_asc': // urut A–Z
+    filteredPhotos.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    break;
+  case 'name_desc': // urut Z–A
+    filteredPhotos.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+    break;
+}
 
     // Jika ada input pencarian, filter berdasarkan nama/title foto
     if (searchInput && searchInput.value.trim() !== '') {
@@ -772,6 +806,13 @@ function updatePhotoGallery(showLoading = true) {
 let searchTimeout;
 document.getElementById('photo-search')?.addEventListener('input', () => {
   clearTimeout(searchTimeout);
+// === Dropdown "Urutkan" berubah -> langsung ubah tampilan galeri ===
+document.getElementById('photo-sort')?.addEventListener('change', () => {
+  const container = document.getElementById('photo-container');
+  container.classList.add('opacity-50');
+  updatePhotoGallery(false);
+  setTimeout(() => container.classList.remove('opacity-50'), 300);
+});
 
   const container = document.getElementById('photo-container');
   container.innerHTML = `
