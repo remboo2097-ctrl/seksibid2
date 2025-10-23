@@ -178,31 +178,52 @@
             
             <!-- Foto Gallery -->
             <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">📸 Galeri Foto</h3>
-                              
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+  <h3 class="text-xl font-semibold text-gray-800 flex items-center space-x-2">
+    <span>📸</span><span>Galeri Foto</span>
+  </h3>
+</div>
+
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 space-y-3 md:space-y-0">
   <input 
     type="text" 
     id="photo-search" 
-    placeholder="Cari nama foto..." 
+    placeholder="🔍 Cari nama foto..." 
     class="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
   >
-
+  <!-- Dropdown Pilih Bulan -->
+  <select id="month-filter" 
+          class="mt-2 md:mt-0 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+    <option value="">Semua Bulan</option>
+    <option value="-01-">Januari</option>
+    <option value="-02-">Februari</option>
+    <option value="-03-">Maret</option>
+    <option value="-04-">April</option>
+    <option value="-05-">Mei</option>
+    <option value="-06-">Juni</option>
+    <option value="-07-">Juli</option>
+    <option value="-08-">Agustus</option>
+    <option value="-09-">September</option>
+    <option value="-10-">Oktober</option>
+    <option value="-11-">November</option>
+    <option value="-12-">Desember</option>
+  </select>
   <select 
     id="photo-sort" 
     class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
   >
-    <option value="date_desc">📅 Tanggal Terbaru</option>
-    <option value="date_asc">📅 Tanggal Terlama</option>
-    <option value="name_asc">🔤 Judul A–Z</option>
-    <option value="name_desc">🔤 Judul Z–A</option>
+    <option value="date_desc">Tanggal Terbaru</option>
+    <option value="date_asc">Tanggal Terlama</option>
+    <option value="name_asc">Judul A–Z</option>
+    <option value="name_desc">Judul Z–A</option>
   </select>
-                </div>
-                
-                
+</div>
+
+
                 <div id="photo-count" class="text-sm text-gray-500 mb-4">Total foto: 0</div>
                 <div id="photo-gallery" class="photo-gallery overflow-x-auto pb-4">
-                    <div id="photo-container" class="flex space-x-4 min-w-max"></div>
+                <div id="photo-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
+
                 </div>
             </div>
             
@@ -624,6 +645,44 @@ Inti Peran: Sekbid 2 saat ini bertindak sebagai garda terdepan yang memastikan s
         updatePhotoGallery();
         updateDocumentDisplay();
     }
+    // Filter berdasarkan bulan kegiatan
+document.getElementById('month-filter')?.addEventListener('change', () => {
+  const selectedMonth = document.getElementById('month-filter').value;
+  const searchInput = document.getElementById('photo-search');
+  const keyword = searchInput ? searchInput.value.toLowerCase() : "";
+
+  let filteredPhotos = photos.filter(photo => {
+    const matchesMonth = selectedMonth === "" || (photo.date && photo.date.includes(selectedMonth));
+    const matchesSearch = !keyword || (photo.title && photo.title.toLowerCase().includes(keyword));
+    return matchesMonth && matchesSearch;
+  });
+
+  // render ulang
+  const container = document.getElementById('photo-container');
+  const countDiv = document.getElementById('photo-count');
+  countDiv.textContent = `Total foto: ${filteredPhotos.length}`;
+
+  if (filteredPhotos.length === 0) {
+    container.innerHTML = `
+      <div class="text-center text-gray-400 py-12">
+        <div class="text-6xl mb-4">📷</div>
+        <p>Tidak ada foto pada bulan ini.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filteredPhotos.map(photo => `
+    <div class="relative group overflow-hidden rounded-xl cursor-pointer transition-all duration-300" onclick="activatePhoto(this)">
+      <img src="${photo.url}" alt="${photo.title}" loading="lazy"
+           class="w-full h-full object-cover aspect-square rounded-xl transition-transform duration-300 ease-in-out">
+      <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white text-sm text-center py-2 translate-y-full opacity-0 transition-all duration-300">
+        <p class="font-semibold">${photo.title || '(Tanpa Judul)'}</p>
+        <p class="text-xs text-gray-300">${photo.date || '-'}</p>
+      </div>
+    </div>
+  `).join('');
+});
 
     // Navigation functionality
     function showSection(sectionName) {
@@ -669,7 +728,7 @@ Inti Peran: Sekbid 2 saat ini bertindak sebagai garda terdepan yang memastikan s
     // Load documents from Supabase table 'documents'
     async function loadDocuments() {
         try {
-            const { data, error } = await supabaseClient.from('documents').select('*').order('id', { ascending: false });
+            const { data, error } = await supabaseClient.from('doc').select('*').order('id', { ascending: false });
             if (error) throw error;
             documents = data || [];
             updateDocumentDisplay();
@@ -678,7 +737,7 @@ Inti Peran: Sekbid 2 saat ini bertindak sebagai garda terdepan yang memastikan s
         }
     }
 
-        // Update photo gallery (render)
+    // Update photo gallery (render)
     // === PENCARIAN FOTO DENGAN DEBOUNCE + ANIMASI LOADING ===
 
 // Render bertahap untuk mencegah frame drop
@@ -732,7 +791,7 @@ function updatePhotoGallery(showLoading = true) {
 
   setTimeout(() => {
     let filteredPhotos = photos;
-// === SORTING FOTO ===
+    // === SORTING FOTO ===
 // Ambil pilihan dari dropdown
 const sortSelect = document.getElementById('photo-sort');
 const sortBy = sortSelect ? sortSelect.value : 'date_desc';
@@ -782,13 +841,28 @@ switch (sortBy) {
       renderInChunks(filteredPhotos, container, 12);
     } else {
       container.innerHTML = filteredPhotos.map(photo => `
-        <div class="flex-shrink-0 bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 slide-in" style="width: 300px;">
-          <img src="${photo.url}" alt="${photo.title}" class="w-full h-48 object-cover">
-          <div class="p-4">
-            <h3 class="font-semibold text-gray-800 mb-2 truncate">${photo.title}</h3>
-            <div class="text-sm text-gray-600 space-y-1">
-              <p>📅 ${photo.date}</p>
-              <p>⏰ ${new Date(photo.upload_date).toLocaleString('id-ID')}</p>
+  <div class="relative group overflow-hidden rounded-xl cursor-pointer transition-all duration-300" onclick="activatePhoto(this, ${photo.id}, '${photo.url.split('/').pop()}', '${photo.title || ''}', '${photo.date || ''}')">
+    <img src="${photo.url}" alt="${photo.title}" loading="lazy"
+         class="w-full h-full object-cover aspect-square rounded-xl transition-transform duration-300 ease-in-out">
+
+    <!-- Tombol EDIT (kiri atas) -->
+    ${isAdminLoggedIn() ? `
+      <button onclick="event.stopPropagation(); editPhoto(${photo.id}, '${photo.title || ''}', '${photo.date || ''}')" 
+              class="absolute top-2 left-2 bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-2 py-1 rounded-lg opacity-0 group-[.active]:opacity-100 transition-opacity duration-200">
+        ✏️ Edit
+      </button>` : ''}
+
+    <!-- Tombol HAPUS (kanan atas) -->
+    ${isAdminLoggedIn() ? `
+      <button onclick="event.stopPropagation(); deletePhoto(${photo.id}, '${photo.url.split('/').pop()}')" 
+              class="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded-lg opacity-0 group-[.active]:opacity-100 transition-opacity duration-200">
+        🗑️ Hapus
+      </button>` : ''}
+
+    <!-- Caption bawah -->
+    <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white text-sm text-center py-2 translate-y-full opacity-0 transition-all duration-300">
+      <p class="font-semibold">${photo.title || '(Tanpa Judul)'}</p>
+      <p class="text-xs text-gray-300">${photo.date || '-'}</p>
             </div>
             <div class="flex justify-between items-center mt-3">
               <a href="${photo.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">📥 Lihat</a>
@@ -827,7 +901,7 @@ document.getElementById('photo-sort')?.addEventListener('change', () => {
   }, 400); // 400ms jeda agar halus
 });
 
-        
+
     // Update document displays
     function updateDocumentDisplay() {
         updateDocumentGrid();
@@ -1081,6 +1155,55 @@ document.getElementById('photo-sort')?.addEventListener('change', () => {
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') hideLoginModal();
     });
+    // Efek klik membesar + tampilkan caption dan tombol admin
+function activatePhoto(element, id, fileName, title, date) {
+  // Edit nama dan tanggal foto (Admin Only)
+async function editPhoto(photoId, oldTitle, oldDate) {
+  const newTitle = prompt("Ubah nama foto:", oldTitle);
+  if (newTitle === null) return; // batal
+  const newDate = prompt("Ubah tanggal kegiatan (YYYY-MM-DD):", oldDate);
+  if (newDate === null) return;
+
+  try {
+    const { error } = await supabaseClient
+      .from('photos')
+      .update({ title: newTitle, date: newDate })
+      .eq('id', photoId);
+    if (error) throw error;
+    showStatus("📸 Data foto berhasil diperbarui!", "success");
+    await loadPhotos();
+  } catch (err) {
+    console.error(err);
+    showStatus("❌ Gagal memperbarui foto: " + (err.message || err), "error");
+  }
+}
+
+  // Tutup foto lain
+  document.querySelectorAll('#photo-container .group').forEach(el => {
+    if (el !== element) {
+      el.querySelector('img').classList.remove('scale-110');
+      el.querySelector('div.absolute.bottom-0').classList.add('translate-y-full', 'opacity-0');
+      el.querySelectorAll('button').forEach(btn => btn.classList.add('opacity-0'));
+    }
+  });
+
+  // Toggle aktif pada foto diklik
+  const img = element.querySelector('img');
+  const caption = element.querySelector('div.absolute.bottom-0');
+  const buttons = element.querySelectorAll('button');
+
+  const isActive = img.classList.contains('scale-110');
+  if (isActive) {
+    img.classList.remove('scale-110');
+    caption.classList.add('translate-y-full', 'opacity-0');
+    buttons.forEach(btn => btn.classList.add('opacity-0'));
+  } else {
+    img.classList.add('scale-110');
+    caption.classList.remove('translate-y-full', 'opacity-0');
+    buttons.forEach(btn => btn.classList.remove('opacity-0'));
+  }
+}
+
     </script>
 </body>
 </html>
