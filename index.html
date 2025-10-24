@@ -1,74 +1,39 @@
 <!DOCTYPE html>
 <html lang="id" class="h-full">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OSIS Sekbid 2</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>OSIS Sekbid 2 — Postingan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body {
-            box-sizing: border-box;
-        }
-        
-        .nav-scrollbar::-webkit-scrollbar {
-            height: 8px;
-        }
-        
-        .nav-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 10px;
-        }
-        
-        .nav-scrollbar::-webkit-scrollbar-thumb {
-            background: #3b82f6;
-            border-radius: 10px;
-        }
-        
-        .nav-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #2563eb;
-        }
-        
-        .photo-gallery::-webkit-scrollbar {
-            height: 12px;
-        }
-        
-        .photo-gallery::-webkit-scrollbar-track {
-            background: #f8fafc;
-            border-radius: 10px;
-        }
-        
-        .photo-gallery::-webkit-scrollbar-thumb {
-            background: #64748b;
-            border-radius: 10px;
-        }
-        
-        .photo-gallery::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .slide-in {
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        /* safety z-index */
+        body { box-sizing: border-box; }
+        .nav-scrollbar::-webkit-scrollbar { height: 8px; }
+        .nav-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .nav-scrollbar::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+        .nav-scrollbar::-webkit-scrollbar-thumb:hover { background: #2563eb; }
+        .photo-gallery::-webkit-scrollbar { height: 12px; }
+        .photo-gallery::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; }
+        .photo-gallery::-webkit-scrollbar-thumb { background: #64748b; border-radius: 10px; }
+        .photo-gallery::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .fade-in { animation: fadeIn 0.45s ease-in; }
+        @keyframes bounceSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.animate-bounce-slow {
+  animation: bounceSlow 2s infinite;
+}
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .slide-in { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(-10px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         header { position: relative; z-index: 20; }
         main { position: relative; z-index: 1; }
         #login-modal { z-index: 9999; }
+        /* small helpers */
+        .media-card:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 10px 25px rgba(2,6,23,0.08); }
     </style>
 </head>
 <body class="h-full bg-gradient-to-br from-blue-50 to-indigo-100 font-sans">
@@ -94,8 +59,8 @@
         </div>
     </header>
 
-    <!-- Navigation with Horizontal Scroll -->
-    <nav class="bg-white shadow-sm border-b">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4">
             <div class="nav-scrollbar overflow-x-auto">
                 <div class="flex justify-between items-center py-4">
@@ -103,14 +68,11 @@
                         <button onclick="showSection('beranda')" id="nav-beranda" class="nav-btn px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 bg-blue-600 text-white">
                             🏠 Beranda
                         </button>
-                        <button onclick="showSection('dokumentasi')" id="nav-dokumentasi" class="nav-btn px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-100">
-                            📸 Dokumentasi
+                        <button onclick="showSection('posting')" id="nav-posting" class="nav-btn px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-100">
+                            📢 Postingan
                         </button>
                         <button onclick="showSection('upload')" id="nav-upload" class="nav-btn px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-100">
-                            📤 Upload Foto
-                        </button>
-                        <button onclick="showSection('data-siswa')" id="nav-data-siswa" class="nav-btn px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-100">
-                            📄 Upload Dokumen
+                            📤 Upload
                         </button>
                         <button onclick="showSection('kontak')" id="nav-kontak" class="nav-btn px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-100">
                             📞 Kontak
@@ -119,48 +81,35 @@
                             ℹ️ Tentang Kami
                         </button>
                     </div>
-                    
-                    <!-- Login/Logout Button -->
                     <div class="flex items-center space-x-2 ml-4">
-                        <div id="admin-status" class="hidden text-sm text-green-600 font-medium">
-                            👤 Admin
-                        </div>
-                        <button id="login-btn" onclick="showLoginModal()" class="px-4 py-2 bg-gray-600 text-white rounded-full text-sm font-medium hover:bg-gray-700 transition-colors duration-200">
-                            🔐 Login Admin
-                        </button>
-                        <button id="logout-btn" onclick="logout()" class="hidden px-4 py-2 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition-colors duration-200">
-                            🚪 Logout
-                        </button>
+                        <div id="admin-status" class="hidden text-sm text-green-600 font-medium">👤 Admin</div>
+                        <button id="login-btn" onclick="showLoginModal()" class="px-4 py-2 bg-gray-600 text-white rounded-full text-sm font-medium hover:bg-gray-700 transition-colors duration-200">🔐 Login Admin</button>
+                        <button id="logout-btn" onclick="logout()" class="hidden px-4 py-2 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition-colors duration-200">🚪 Logout</button>
                     </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content -->
+    <!-- Main -->
     <main class="max-w-7xl mx-auto px-4 py-8">
-        <!-- Beranda Section -->
+        <!-- Beranda -->
         <section id="beranda" class="section-content fade-in">
             <div class="text-center mb-12">
                 <h2 class="text-4xl font-bold text-gray-800 mb-4">Selamat Datang di OSIS SMK AL-HADI Sekbid 2</h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Website resmi Organisasi Siswa Intra Sekolah Sekbid 2. Tempat berbagi dokumentasi kegiatan dan informasi terkini.
-                </p>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">Website resmi Organisasi Siswa Intra Sekolah Sekbid 2. Tempat berbagi dokumentasi kegiatan dan informasi terkini.</p>
             </div>
-            
             <div class="grid md:grid-cols-3 gap-8 mb-12">
                 <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
                     <div class="text-4xl mb-4">🎯</div>
                     <h3 class="text-xl font-semibold text-gray-800 mb-2">Visi Kami</h3>
-                    <p class="text-gray-600">Mewujudkan peserta didik yang berkarakter mulia, berbudi pekerti luhur, berakhlak Islami,dan membangun kepedulian siswa tentang kebersihan</p>
+                    <p class="text-gray-600">Mewujudkan peserta didik yang berkarakter mulia, berbudi pekerti luhur, berakhlak Islami, dan membangun kepedulian siswa tentang kebersihan.</p>
                 </div>
-                
                 <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
                     <div class="text-4xl mb-4">🚀</div>
                     <h3 class="text-xl font-semibold text-gray-800 mb-2">Misi Kami</h3>
-                    <p class="text-gray-600">Mengembangkan Program Pembiasaan: seperti 5S, Membangun Lingkungan Sekolah yang Harmonis berawal dari osis</p>
+                    <p class="text-gray-600">Mengembangkan Program Pembiasaan seperti 5S dan membangun lingkungan sekolah yang harmonis.</p>
                 </div>
-                
                 <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
                     <div class="text-4xl mb-4">🤝</div>
                     <h3 class="text-xl font-semibold text-gray-800 mb-2">Nilai Kami</h3>
@@ -169,241 +118,111 @@
             </div>
         </section>
 
-        <!-- Dokumentasi Section -->
-        <section id="dokumentasi" class="section-content hidden">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-800 mb-4">📸 Galeri Dokumentasi</h2>
-                <p class="text-gray-600">Kumpulan foto kegiatan OSIS Sekbid 2</p>
-            </div>
-            
-            <!-- Foto Gallery -->
-            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-  <h3 class="text-xl font-semibold text-gray-800 flex items-center space-x-2">
-    <span>📸</span><span>Galeri Foto</span>
-  </h3>
+        <!-- Postingan (gabungan foto/video/dokumen) -->
+        <!-- Header Postingan -->
+        <section id="posting" class="section-content hidden">
+<div class="text-center mb-8">
+  <div class="flex justify-center items-center space-x-2 mb-3">
+    <span class="text-4xl animate-bounce-slow">📢</span>
+    <h2 class="text-4xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+      Postingan
+    </h2>
+  </div>
+  <p class="text-gray-600 text-base">📸 Semua konten menarik: foto, video, dan dokumen kegiatan OSIS Sekbid 2</p>
 </div>
 
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 space-y-3 md:space-y-0">
-  <input 
-    type="text" 
-    id="photo-search" 
-    placeholder="🔍 Cari nama foto..." 
-    class="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-  >
-  <!-- Dropdown Pilih Bulan -->
-  <select id="month-filter" 
-          class="mt-2 md:mt-0 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-    <option value="">Semua Bulan</option>
-    <option value="-01-">Januari</option>
-    <option value="-02-">Februari</option>
-    <option value="-03-">Maret</option>
-    <option value="-04-">April</option>
-    <option value="-05-">Mei</option>
-    <option value="-06-">Juni</option>
-    <option value="-07-">Juli</option>
-    <option value="-08-">Agustus</option>
-    <option value="-09-">September</option>
-    <option value="-10-">Oktober</option>
-    <option value="-11-">November</option>
-    <option value="-12-">Desember</option>
-  </select>
-  <select 
-    id="photo-sort" 
-    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-  >
-    <option value="date_desc">Tanggal Terbaru</option>
-    <option value="date_asc">Tanggal Terlama</option>
-    <option value="name_asc">Judul A–Z</option>
-    <option value="name_desc">Judul Z–A</option>
-  </select>
+<!-- Card filter/search -->
+<div class="bg-white shadow-md rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between mb-8 border border-gray-100">
+  <div class="flex items-center space-x-2 mb-3 md:mb-0">
+    <span class="text-sm text-gray-500">📊 Total posting:</span>
+    <span id="post-count" class="text-sm font-semibold text-blue-600">0</span>
+  </div>
+  <div class="flex items-center space-x-2 w-full md:w-auto">
+    <div class="relative flex-1">
+      <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
+      <input id="post-search" type="text" placeholder="Cari judul atau tag..."
+        class="w-full md:w-64 pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 transition-all duration-200">
+    </div>
+    <select id="post-filter"
+      class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+      <option value="">Semua</option>
+      <option value="image">📷 Foto</option>
+      <option value="video">🎥 Video</option>
+      <option value="dokumen">📄 Dokumen</option>
+    </select>
+  </div>
 </div>
 
-
-                <div id="photo-count" class="text-sm text-gray-500 mb-4">Total foto: 0</div>
-                <div id="photo-gallery" class="photo-gallery overflow-x-auto pb-4">
-                <div id="photo-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
-
-                </div>
-            </div>
-            
-            <!-- Documents Gallery -->
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">📄 Dokumen & File</h3>
-                <div id="document-count" class="text-sm text-gray-500 mb-4">Total dokumen: 0</div>
-                <div id="public-documents-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-            </div>
+            <div id="posts-grid" class="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </section>
 
-        <!-- Upload Dokumen Section -->
-        <section id="data-siswa" class="section-content hidden">
-            <!-- Admin Only Access -->
-            <div id="data-access-denied" class="text-center py-20">
-                <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
-                    <div class="text-6xl mb-4">🔒</div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Akses Terbatas</h2>
-                    <p class="text-gray-600 mb-6">Halaman upload dokumen hanya dapat diakses oleh admin yang telah diizinkan.</p>
-                    <button onclick="showLoginModal()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200">
-                        🔐 Login sebagai Admin
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Admin Document Upload Form -->
-            <div id="data-form-container" class="hidden">
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-4">📄 Upload Dokumen</h2>
-                    <p class="text-gray-600">Upload dokumen seperti spreadsheet, presentasi, video, atau dokumen Word</p>
-                </div>
-                
-                <div class="max-w-4xl mx-auto">
-                    <!-- Upload Form -->
-                    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-6">📤 Upload Dokumen Baru</h3>
-                        
-                        <form id="document-upload-form" class="space-y-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Dokumen</label>
-                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors duration-200">
-                                    <input type="file" id="document-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp4,.avi,.mov,.wmv" class="hidden">
-                                    <div onclick="document.getElementById('document-input').click()" class="cursor-pointer">
-                                        <div class="text-4xl mb-2">📁</div>
-                                        <p class="text-gray-600">Klik untuk memilih dokumen</p>
-                                        <p class="text-sm text-gray-400 mt-1">Mendukung: PDF, Word, Excel, PowerPoint, Video (MP4, AVI, MOV, WMV)</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="grid md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="document-title" class="block text-sm font-medium text-gray-700 mb-2">Judul Dokumen</label>
-                                    <input type="text" id="document-title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Contoh: Laporan Kegiatan OSIS 2025" required>
-                                </div>
-                                
-                                <div>
-                                    <label for="document-category" class="block text-sm font-medium text-gray-700 mb-2">Kategori</label>
-                                    <select id="document-category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
-                                        <option value="">Pilih Kategori</option>
-                                        <option value="laporan">📊 Laporan</option>
-                                        <option value="presentasi">📽️ Presentasi</option>
-                                        <option value="video">🎥 Video</option>
-                                        <option value="surat">📝 Surat/Dokumen</option>
-                                        <option value="data">📈 Data/Spreadsheet</option>
-                                        <option value="lainnya">📄 Lainnya</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label for="document-description" class="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
-                                <textarea id="document-description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Deskripsi singkat tentang dokumen ini..."></textarea>
-                            </div>
-                            
-                            <div>
-                                <label for="document-date" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Dokumen</label>
-                                <input type="date" id="document-date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
-                            </div>
-                            
-                            <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center space-x-2">
-                                <span>📤</span>
-                                <span>Upload Dokumen</span>
-                            </button>
-                        </form>
-                        
-                        <div id="document-status" class="mt-4 text-center hidden"></div>
-                    </div>
-                    
-                    <!-- Document List -->
-                    <div class="bg-white rounded-xl shadow-lg p-6">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-xl font-semibold text-gray-800">📋 Daftar Dokumen</h3>
-                            <div class="flex space-x-2">
-                                <select id="filter-category" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                                    <option value="">Semua Kategori</option>
-                                    <option value="laporan">📊 Laporan</option>
-                                    <option value="presentasi">📽️ Presentasi</option>
-                                    <option value="video">🎥 Video</option>
-                                    <option value="surat">📝 Surat/Dokumen</option>
-                                    <option value="data">📈 Data/Spreadsheet</option>
-                                    <option value="lainnya">📄 Lainnya</option>
-                                </select>
-                                <button onclick="clearAllDocuments()" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors duration-200">
-                                    🗑️ Hapus Semua
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div id="documents-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Upload Section -->
+        <!-- Upload (satu form untuk semua tipe file) -->
         <section id="upload" class="section-content hidden">
-            <!-- Admin Only Access -->
+            <div class="text-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">📤 Upload</h2>
+                <p class="text-gray-600">Upload foto, video, atau dokumen. (Hanya admin)</p>
+            </div>
+
             <div id="upload-access-denied" class="text-center py-20">
                 <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
                     <div class="text-6xl mb-4">🔒</div>
                     <h2 class="text-2xl font-bold text-gray-800 mb-4">Akses Terbatas</h2>
-                    <p class="text-gray-600 mb-6">Halaman upload foto hanya dapat diakses oleh admin yang telah diizinkan.</p>
-                    <button onclick="showLoginModal()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200">
-                        🔐 Login sebagai Admin
-                    </button>
+                    <p class="text-gray-600 mb-6">Halaman upload hanya dapat diakses oleh admin.</p>
+                    <button onclick="showLoginModal()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200">🔐 Login sebagai Admin</button>
                 </div>
             </div>
-            
-            <!-- Admin Upload Form -->
-            <div id="upload-form-container" class="hidden">
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-4">📤 Upload Foto Dokumentasi</h2>
-                    <p class="text-gray-600">Bagikan momen kegiatan OSIS dengan mengunggah foto</p>
-                </div>
-                
-                <div class="max-w-2xl mx-auto">
-                    <div class="bg-white rounded-xl shadow-lg p-8">
-                        <form id="upload-form" class="space-y-6" enctype="multipart/form-data">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Foto</label>
-                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors duration-200">
-                                    <input type="file" id="photo-input" accept="image/*" multiple class="hidden">
-                                    <div onclick="document.getElementById('photo-input').click()" class="cursor-pointer">
-                                        <div class="text-4xl mb-2">📁</div>
-                                        <p class="text-gray-600">Klik untuk memilih foto</p>
-                                        <p class="text-sm text-gray-400 mt-1">Mendukung format JPG, PNG, GIF</p>
-                                    </div>
+
+            <div id="upload-form-container" class="hidden max-w-2xl mx-auto">
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <form id="universal-upload-form" class="space-y-6" enctype="multipart/form-data">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Pilih File (foto / video / dokumen)</label>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors duration-200">
+                                <input type="file" id="post-input" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" class="hidden">
+                                <div onclick="document.getElementById('post-input').click()" class="cursor-pointer">
+                                    <div class="text-4xl mb-2">📁</div>
+                                    <p id="post-input-label" class="text-gray-600">Klik untuk memilih file</p>
+                                    <p class="text-sm text-gray-400 mt-1">Mendukung: JPG, PNG, GIF, MP4, MOV, PDF, DOCX, PPTX, XLSX</p>
                                 </div>
                             </div>
-                            
+                        </div>
+
+                        <div>
+                            <label for="post-title" class="block text-sm font-medium text-gray-700 mb-2">Judul</label>
+                            <input type="text" id="post-title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Contoh: Kegiatan Bakti Sosial 2025" required>
+                        </div>
+
+                        <div>
+                            <label for="post-description" class="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
+                            <textarea id="post-description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Deskripsi singkat..."></textarea>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-4">
                             <div>
-                                <label for="photo-title" class="block text-sm font-medium text-gray-700 mb-2">Judul/Keterangan</label>
-                                <input type="text" id="photo-title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Contoh: Kegiatan Bakti Sosial 2025">
+                                <label for="post-date" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Kegiatan</label>
+                                <input type="date" id="post-date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" value="">
                             </div>
-                            
                             <div>
-                                <label for="photo-date" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Kegiatan</label>
-                                <input type="date" id="photo-date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <label for="post-tags" class="block text-sm font-medium text-gray-700 mb-2">Tags (pisah dengan koma)</label>
+                                <input type="text" id="post-tags" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="OSIS, Kegiatan, 2025">
                             </div>
-                            
-                            <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center space-x-2">
-                                <span>📤</span>
-                                <span>Upload Foto</span>
-                            </button>
-                        </form>
-                        
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center space-x-2">
+                            <span>📤</span><span>Upload</span>
+                        </button>
                         <div id="upload-status" class="mt-4 text-center hidden"></div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </section>
 
-        <!-- Kontak Section -->
+        <!-- Kontak -->
         <section id="kontak" class="section-content hidden">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-800 mb-4">📞 Hubungi Kami</h2>
                 <p class="text-gray-600">Informasi kontak pengurus OSIS Sekbid 2</p>
             </div>
-            
             <div class="grid md:grid-cols-2 gap-8">
                 <div class="bg-white rounded-xl shadow-lg p-6">
                     <h3 class="text-xl font-semibold text-gray-800 mb-4">Sekbid 2</h3>
@@ -417,7 +236,6 @@
                                 <p class="text-sm text-gray-600">Ramadhani Putra Firdaus</p>
                             </div>
                         </div>
-                        
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                                 <span class="text-green-600">🤝</span>
@@ -427,7 +245,6 @@
                                 <p class="text-sm text-gray-600">Mutiara Radisty</p>
                             </div>
                         </div>
-                        
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                                 <span class="text-purple-600">📝</span>
@@ -439,7 +256,6 @@
                         </div>
                     </div>
                 </div>
-                
                 <div class="bg-white rounded-xl shadow-lg p-6">
                     <h3 class="text-xl font-semibold text-gray-800 mb-4">Informasi Sekolah</h3>
                     <div class="space-y-4">
@@ -447,10 +263,9 @@
                             <span class="text-blue-600 mt-1">🏫</span>
                             <div>
                                 <p class="font-medium text-gray-800">Alamat</p>
-                                <p class="text-sm text-gray-600">Jl. AH Nasution No 59<br>Cikadut, Bandung, JawaBarat</p>
+                                <p class="text-sm text-gray-600">Jl. AH Nasution No 59<br>Cikadut, Bandung, Jawa Barat</p>
                             </div>
                         </div>
-                        
                         <div class="flex items-center space-x-3">
                             <span class="text-green-600">📱</span>
                             <div>
@@ -463,43 +278,28 @@
             </div>
         </section>
 
-        <!-- Tentang Section -->
+        <!-- Tentang -->
         <section id="tentang" class="section-content hidden">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-800 mb-4">ℹ️ Tentang OSIS Sekbid 2</h2>
                 <p class="text-gray-600">Mengenal lebih dekat organisasi siswa kami</p>
             </div>
-            
             <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
                 <h3 class="text-2xl font-semibold text-gray-800 mb-4">Sejarah Singkat</h3>
-                <p class="text-gray-600 leading-relaxed mb-6">
-Sekbid 2 mulai aktif menanamkan nilai-nilai etika, sopan santun, dan disiplin seiring kebutuhan pembinaan karakter remaja.</p>
-                <p class="text-gray-600 leading-relaxed mb-6">
-Penyesuaian Program (2000-an): Periode ini melihat penguatan program pembiasaan harian, seperti gerakan Senyum, Sapa, Salam (3S) dan kultum/ceramah rutin.</p>
-                <p class="text-gray-600 leading-relaxed mb-6">
-Penegasan Karakter (Saat Ini): Nama Sekbid dipertegas menjadi "Budi Pekerti Luhur dan Akhlak Mulia" untuk selaras dengan fokus Pendidikan Karakter Nasional. Peran utamanya adalah menjadi pelopor dalam membentuk integritas moral, anti-perundungan (anti-bullying), dan budaya 5S (Senyum, Sapa, Salam, Sopan, Santun) di sekolah.</p>
-                <p class="text-gray-600 leading-relaxed mb-6">
-Inti Peran: Sekbid 2 saat ini bertindak sebagai garda terdepan yang memastikan siswa tidak hanya cerdas, tetapi juga memiliki moralitas dan etika yang tinggi dalam interaksi sehari-hari.
-                </p>
-                
+                <p class="text-gray-600 leading-relaxed mb-6">Sekbid 2 mulai aktif menanamkan nilai-nilai etika, sopan santun, dan disiplin seiring kebutuhan pembinaan karakter remaja.</p>
                 <h3 class="text-2xl font-semibold text-gray-800 mb-4">Program Kerja</h3>
                 <div class="grid md:grid-cols-2 gap-6">
                     <div class="border-l-4 border-blue-500 pl-4">
                         <h4 class="font-semibold text-gray-800 mb-2">Proker Jangka Pendek</h4>
                         <p class="text-gray-600 text-sm">Lomba Kebersihan Kelas</p>
                     </div>
-                    
                     <div class="border-l-4 border-green-500 pl-4">
                         <h4 class="font-semibold text-gray-800 mb-2">Proker Jangka Sedang</h4>
-                        <p class="text-gray-600 text-sm">7K</p>
-
-                        <p class="text-gray-600 text-sm">Poster Digital
+                        <p class="text-gray-600 text-sm">7K, Poster Digital</p>
                     </div>
-                    
                     <div class="border-l-4 border-purple-500 pl-4">
                         <h4 class="font-semibold text-gray-800 mb-2">Proker Jangka Panjang</h4>
-                        <p class="text-gray-600 text-sm">Jager</p>
-                        <p class="text-gray-600 text-sm">Piket Mabes</p>
+                        <p class="text-gray-600 text-sm">Jager, Piket Mabes</p>
                     </div>
                 </div>
             </div>
@@ -514,30 +314,21 @@ Inti Peran: Sekbid 2 saat ini bertindak sebagai garda terdepan yang memastikan s
                 <h2 class="text-2xl font-bold text-gray-800">Login Admin</h2>
                 <p class="text-gray-600 text-sm mt-2">Masukkan username dan password admin</p>
             </div>
-            
             <form id="login-form" class="space-y-4">
                 <div>
                     <label for="admin-username" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
-                    <input type="text" id="admin-username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Masukkan username">
+                    <input type="text" id="admin-username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Masukkan username">
                 </div>
-                
                 <div>
                     <label for="admin-password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                    <input type="password" id="admin-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Masukkan password">
+                    <input type="password" id="admin-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Masukkan password">
                 </div>
-                
                 <div id="login-error" class="text-red-600 text-sm text-center hidden"></div>
-                
                 <div class="flex space-x-3">
-                    <button type="button" onclick="hideLoginModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                        Batal
-                    </button>
-                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                        Login
-                    </button>
+                    <button type="button" onclick="hideLoginModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200">Batal</button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">Login</button>
                 </div>
             </form>
-            
             <div class="mt-6 p-4 bg-blue-50 rounded-lg">
                 <p class="text-sm text-blue-800 font-medium mb-2">👥 Hanya Admin yang Diizinkan:</p>
                 <p class="text-xs text-blue-600 mt-2 italic">jika ingin login chat admin via wa</p>
@@ -559,37 +350,28 @@ Inti Peran: Sekbid 2 saat ini bertindak sebagai garda terdepan yang memastikan s
     </footer>
 
     <script>
-    // ====== SUPABASE CONFIG ======
+    // ===== SUPABASE CONFIG =====
     const SUPABASE_URL = "https://ikogolsygaryiowccmvy.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlrb2dvbHN5Z2FyeWlvd2NjbXZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MjQ4MzksImV4cCI6MjA3NjEwMDgzOX0.eFqaSFyvqU3E_KQdq5aFUTpxpoXuXNwdFzo60mpLFgg";
     const BUCKET_NAME = 'uploads';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Admin credentials - keep as is (client-side for demo)
+    // Admin credentials (demo) - pindahkan ke server di produksi
     const adminCredentials = {
-        'rama200907': 'mica1620',
+        'rama20': 'mica1620',
         'mdamara2': 'apaajapw12',
         'mutiara2': 'logininaja12'
     };
 
-    // Check if admin is logged in
-    function isAdminLoggedIn() {
-        return localStorage.getItem('adminLoggedIn') === 'true';
-    }
+    // Simple admin state
+    function isAdminLoggedIn() { return localStorage.getItem('adminLoggedIn') === 'true'; }
+    function getAdminUsername() { return localStorage.getItem('adminUsername') || 'unknown'; }
 
-    // Login modal functions
-    function showLoginModal() {
-        document.getElementById('login-modal').classList.remove('hidden');
-        document.getElementById('admin-username').focus();
-    }
+    // Modal functions
+    function showLoginModal() { document.getElementById('login-modal').classList.remove('hidden'); document.getElementById('admin-username').focus(); }
+    function hideLoginModal() { document.getElementById('login-modal').classList.add('hidden'); document.getElementById('login-form').reset(); document.getElementById('login-error').classList.add('hidden'); }
 
-    function hideLoginModal() {
-        document.getElementById('login-modal').classList.add('hidden');
-        document.getElementById('login-form').reset();
-        document.getElementById('login-error').classList.add('hidden');
-    }
-
-    // Login functionality
+    // Login
     document.getElementById('login-form').addEventListener('submit', function(e) {
         e.preventDefault();
         const username = document.getElementById('admin-username').value;
@@ -600,7 +382,7 @@ Inti Peran: Sekbid 2 saat ini bertindak sebagai garda terdepan yang memastikan s
             localStorage.setItem('adminUsername', username);
             updateAdminUI();
             hideLoginModal();
-            showStatus('Login berhasil! Selamat datang, ' + username + ' 👋', 'success');
+            showUploadStatus('Login berhasil! Selamat datang, ' + username + ' 👋', 'success');
         } else {
             errorDiv.textContent = 'Username atau password salah!';
             errorDiv.classList.remove('hidden');
@@ -611,598 +393,300 @@ Inti Peran: Sekbid 2 saat ini bertindak sebagai garda terdepan yang memastikan s
         localStorage.removeItem('adminLoggedIn');
         localStorage.removeItem('adminUsername');
         updateAdminUI();
-        showStatus('Logout berhasil! 👋', 'success');
+        showUploadStatus('Logout berhasil! 👋', 'success');
         showSection('beranda');
     }
 
-    // Update admin UI
     function updateAdminUI() {
-        const isLoggedIn = isAdminLoggedIn();
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const adminStatus = document.getElementById('admin-status');
-        const uploadAccessDenied = document.getElementById('upload-access-denied');
-        const uploadFormContainer = document.getElementById('upload-form-container');
-        const dataAccessDenied = document.getElementById('data-access-denied');
-        const dataFormContainer = document.getElementById('data-form-container');
-        if (isLoggedIn) {
-            loginBtn.classList.add('hidden');
-            logoutBtn.classList.remove('hidden');
-            adminStatus.classList.remove('hidden');
-            uploadAccessDenied.classList.add('hidden');
-            uploadFormContainer.classList.remove('hidden');
-            dataAccessDenied.classList.add('hidden');
-            dataFormContainer.classList.remove('hidden');
-        } else {
-            loginBtn.classList.remove('hidden');
-            logoutBtn.classList.add('hidden');
-            adminStatus.classList.add('hidden');
-            uploadAccessDenied.classList.remove('hidden');
-            uploadFormContainer.classList.add('hidden');
-            dataAccessDenied.classList.remove('hidden');
-            dataFormContainer.classList.add('hidden');
-        }
-        updatePhotoGallery();
-        updateDocumentDisplay();
+        const logged = isAdminLoggedIn();
+        document.getElementById('login-btn').classList.toggle('hidden', logged);
+        document.getElementById('logout-btn').classList.toggle('hidden', !logged);
+        document.getElementById('admin-status').classList.toggle('hidden', !logged);
+        document.getElementById('upload-access-denied').classList.toggle('hidden', logged);
+        document.getElementById('upload-form-container').classList.toggle('hidden', !logged);
+        // re-render for admin controls if needed
+        loadPosts();
     }
-    // Filter berdasarkan bulan kegiatan
-document.getElementById('month-filter')?.addEventListener('change', () => {
-  const selectedMonth = document.getElementById('month-filter').value;
-  const searchInput = document.getElementById('photo-search');
-  const keyword = searchInput ? searchInput.value.toLowerCase() : "";
 
-  let filteredPhotos = photos.filter(photo => {
-    const matchesMonth = selectedMonth === "" || (photo.date && photo.date.includes(selectedMonth));
-    const matchesSearch = !keyword || (photo.title && photo.title.toLowerCase().includes(keyword));
-    return matchesMonth && matchesSearch;
-  });
-
-  // render ulang
-  const container = document.getElementById('photo-container');
-  const countDiv = document.getElementById('photo-count');
-  countDiv.textContent = `Total foto: ${filteredPhotos.length}`;
-
-  if (filteredPhotos.length === 0) {
-    container.innerHTML = `
-      <div class="text-center text-gray-400 py-12">
-        <div class="text-6xl mb-4">📷</div>
-        <p>Tidak ada foto pada bulan ini.</p>
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML = filteredPhotos.map(photo => `
-    <div class="relative group overflow-hidden rounded-xl cursor-pointer transition-all duration-300" onclick="activatePhoto(this)">
-      <img src="${photo.url}" alt="${photo.title}" loading="lazy"
-           class="w-full h-full object-cover aspect-square rounded-xl transition-transform duration-300 ease-in-out">
-      <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white text-sm text-center py-2 translate-y-full opacity-0 transition-all duration-300">
-        <p class="font-semibold">${photo.title || '(Tanpa Judul)'}</p>
-        <p class="text-xs text-gray-300">${photo.date || '-'}</p>
-      </div>
-    </div>
-  `).join('');
-});
-
-    // Navigation functionality
+    // Navigation
     function showSection(sectionName) {
-        if (sectionName === 'upload' || sectionName === 'data-siswa') {
+        const sections = document.querySelectorAll('.section-content');
+        sections.forEach(s => { s.classList.add('hidden'); s.classList.remove('fade-in'); });
+        const target = document.getElementById(sectionName);
+        if (!target) return;
+        target.classList.remove('hidden');
+        setTimeout(() => target.classList.add('fade-in'), 10);
+        // update nav active
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('bg-blue-600','text-white');
+            btn.classList.add('text-gray-600','hover:bg-gray-100');
+        });
+        const activeBtn = document.getElementById('nav-' + sectionName);
+        if (activeBtn) { activeBtn.classList.remove('text-gray-600','hover:bg-gray-100'); activeBtn.classList.add('bg-blue-600','text-white'); }
+        if (sectionName === 'posting' || sectionName === 'upload') {
             updateAdminUI();
         }
-        const sections = document.querySelectorAll('.section-content');
-        sections.forEach(section => {
-            section.classList.add('hidden');
-            section.classList.remove('fade-in');
-        });
-        const targetSection = document.getElementById(sectionName);
-        targetSection.classList.remove('hidden');
-        setTimeout(() => { targetSection.classList.add('fade-in'); }, 10);
-        const navButtons = document.querySelectorAll('.nav-btn');
-        navButtons.forEach(btn => {
-            btn.classList.remove('bg-blue-600', 'text-white');
-            btn.classList.add('text-gray-600', 'hover:bg-gray-100');
-        });
-        const activeBtn = document.getElementById(`nav-${sectionName}`);
-        if (activeBtn) {
-            activeBtn.classList.remove('text-gray-600', 'hover:bg-gray-100');
-            activeBtn.classList.add('bg-blue-600', 'text-white');
-        }
     }
 
-    // ====== SUPABASE-BASED STORAGE (photos & documents) ======
-    let photos = [];
-    let documents = [];
+    // ===== Posts data state =====
+    let posts = [];
 
-    // Load photos from Supabase table 'photos'
-    async function loadPhotos() {
+    async function loadPosts() {
         try {
-            const { data, error } = await supabaseClient.from('photos').select('*').order('id', { ascending: false });
+            const { data, error } = await supabaseClient.from('posts').select('*').order('id', { ascending: false });
             if (error) throw error;
-            photos = data || [];
-            updatePhotoGallery();
+            posts = data || [];
+            renderPosts();
         } catch (err) {
-            console.error('Gagal mengambil foto:', err.message || err);
+            console.error('Gagal load posts:', err);
         }
     }
 
-    // Load documents from Supabase table 'documents'
-    async function loadDocuments() {
-        try {
-            const { data, error } = await supabaseClient.from('doc').select('*').order('id', { ascending: false });
-            if (error) throw error;
-            documents = data || [];
-            updateDocumentDisplay();
-        } catch (err) {
-            console.error('Gagal mengambil dokumen:', err.message || err);
+    // Render posts grid
+    function renderPosts() {
+        const container = document.getElementById('posts-grid');
+        const count = document.getElementById('post-count');
+        const filter = document.getElementById('post-filter')?.value || '';
+        const search = document.getElementById('post-search')?.value?.toLowerCase() || '';
+
+        let filtered = posts.slice();
+
+        if (filter) {
+            if (filter === 'image') filtered = filtered.filter(p => (p.file_type || '').startsWith('image'));
+            if (filter === 'video') filtered = filtered.filter(p => (p.file_type || '').startsWith('video'));
+            if (filter === 'dokumen') filtered = filtered.filter(p => !((p.file_type||'').startsWith('image') || (p.file_type||'').startsWith('video')));
         }
-    }
 
-    // Update photo gallery (render)
-    // === PENCARIAN FOTO DENGAN DEBOUNCE + ANIMASI LOADING ===
+        if (search) {
+            filtered = filtered.filter(p => (p.title || '').toLowerCase().includes(search) || (p.tags || []).join(',').toLowerCase().includes(search));
+        }
 
-// Render bertahap untuk mencegah frame drop
-function renderInChunks(list, container, chunkSize = 12) {
-  container.innerHTML = '';
-  let index = 0;
-
-  function renderChunk() {
-    const slice = list.slice(index, index + chunkSize);
-    const html = slice.map(photo => `
-      <div class="flex-shrink-0 bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 slide-in" style="width: 300px;">
-        <img src="${photo.url}" alt="${photo.title}" class="w-full h-48 object-cover">
-        <div class="p-4">
-          <h3 class="font-semibold text-gray-800 mb-2 truncate">${photo.title}</h3>
-          <div class="text-sm text-gray-600 space-y-1">
-            <p>📅 ${photo.date}</p>
-            <p>⏰ ${new Date(photo.upload_date).toLocaleString('id-ID')}</p>
-          </div>
-          <div class="flex justify-between items-center mt-3">
-            <a href="${photo.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">📥 Lihat</a>
-            ${isAdminLoggedIn() ? `<button onclick="deletePhoto(${photo.id}, '${photo.url.split('/').pop()}')" class="text-red-500 hover:text-red-700 text-sm font-medium">🗑️ Hapus</button>` : ''}
-          </div>
-        </div>
-      </div>
-    `).join('');
-
-    container.insertAdjacentHTML('beforeend', html);
-    index += chunkSize;
-    if (index < list.length) requestAnimationFrame(renderChunk);
-  }
-
-  requestAnimationFrame(renderChunk);
-}
-
-
-// Fungsi utama render galeri
-function updatePhotoGallery(showLoading = true) {
-  const container = document.getElementById('photo-container');
-  const countDiv = document.getElementById('photo-count');
-  const searchInput = document.getElementById('photo-search');
-
-  // tampilkan spinner loading
-  if (showLoading) {
-    container.innerHTML = `
-      <div class="flex flex-col justify-center items-center w-full py-10 text-gray-500">
-        <div class="animate-spin rounded-full h-10 w-10 border-b-4 border-blue-600 mb-3"></div>
-        <span>Memuat galeri...</span>
-      </div>
-    `;
-  }
-
-  setTimeout(() => {
-    let filteredPhotos = photos;
-    // === SORTING FOTO ===
-// Ambil pilihan dari dropdown
-const sortSelect = document.getElementById('photo-sort');
-const sortBy = sortSelect ? sortSelect.value : 'date_desc';
-
-// Duplikat array agar tidak ubah data asli
-filteredPhotos = [...filteredPhotos];
-
-// Jalankan sorting sesuai pilihan user
-switch (sortBy) {
-  case 'date_asc': // tanggal kegiatan lama ke baru
-    filteredPhotos.sort((a, b) => new Date(a.date) - new Date(b.date));
-    break;
-  case 'date_desc': // tanggal kegiatan baru ke lama
-    filteredPhotos.sort((a, b) => new Date(b.date) - new Date(a.date));
-    break;
-  case 'name_asc': // urut A–Z
-    filteredPhotos.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    break;
-  case 'name_desc': // urut Z–A
-    filteredPhotos.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
-    break;
-}
-
-    // Jika ada input pencarian, filter berdasarkan nama/title foto
-    if (searchInput && searchInput.value.trim() !== '') {
-      const keyword = searchInput.value.toLowerCase();
-      filteredPhotos = photos.filter(photo =>
-        photo.title.toLowerCase().includes(keyword) ||
-        (photo.url && photo.url.toLowerCase().includes(keyword))
-      );
-    }
-
-    countDiv.textContent = `Total foto: ${filteredPhotos.length}`;
-
-    if (filteredPhotos.length === 0) {
-      container.innerHTML = `
-        <div class="text-center text-gray-400 py-20 px-8">
-          <div class="text-6xl mb-4">📷</div>
-          <p>Tidak ada foto ditemukan.</p>
-        </div>
-      `;
-      return;
-    }
-
-    // Jika banyak foto, gunakan render bertahap
-    if (filteredPhotos.length > 25) {
-      renderInChunks(filteredPhotos, container, 12);
-    } else {
-      container.innerHTML = filteredPhotos.map(photo => `
-  <div class="relative group overflow-hidden rounded-xl cursor-pointer transition-all duration-300" onclick="activatePhoto(this, ${photo.id}, '${photo.url.split('/').pop()}', '${photo.title || ''}', '${photo.date || ''}')">
-    <img src="${photo.url}" alt="${photo.title}" loading="lazy"
-         class="w-full h-full object-cover aspect-square rounded-xl transition-transform duration-300 ease-in-out">
-
-    <!-- Tombol EDIT (kiri atas) -->
-    ${isAdminLoggedIn() ? `
-      <button onclick="event.stopPropagation(); editPhoto(${photo.id}, '${photo.title || ''}', '${photo.date || ''}')" 
-              class="absolute top-2 left-2 bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-2 py-1 rounded-lg opacity-0 group-[.active]:opacity-100 transition-opacity duration-200">
-        ✏️ Edit
-      </button>` : ''}
-
-    <!-- Tombol HAPUS (kanan atas) -->
-    ${isAdminLoggedIn() ? `
-      <button onclick="event.stopPropagation(); deletePhoto(${photo.id}, '${photo.url.split('/').pop()}')" 
-              class="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded-lg opacity-0 group-[.active]:opacity-100 transition-opacity duration-200">
-        🗑️ Hapus
-      </button>` : ''}
-
-    <!-- Caption bawah -->
-    <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white text-sm text-center py-2 translate-y-full opacity-0 transition-all duration-300">
-      <p class="font-semibold">${photo.title || '(Tanpa Judul)'}</p>
-      <p class="text-xs text-gray-300">${photo.date || '-'}</p>
-            </div>
-            <div class="flex justify-between items-center mt-3">
-              <a href="${photo.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">📥 Lihat</a>
-              ${isAdminLoggedIn() ? `<button onclick="deletePhoto(${photo.id}, '${photo.url.split('/').pop()}')" class="text-red-500 hover:text-red-700 text-sm font-medium">🗑️ Hapus</button>` : ''}
-            </div>
-          </div>
-        </div>
-      `).join('');
-    }
-  }, 200);
-}
-
-
-// === Debounce input agar tidak lag ===
-let searchTimeout;
-document.getElementById('photo-search')?.addEventListener('input', () => {
-  clearTimeout(searchTimeout);
-// === Dropdown "Urutkan" berubah -> langsung ubah tampilan galeri ===
-document.getElementById('photo-sort')?.addEventListener('change', () => {
-  const container = document.getElementById('photo-container');
-  container.classList.add('opacity-50');
-  updatePhotoGallery(false);
-  setTimeout(() => container.classList.remove('opacity-50'), 300);
-});
-
-  const container = document.getElementById('photo-container');
-  container.innerHTML = `
-    <div class="flex flex-col justify-center items-center w-full py-10 text-gray-500">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-4 border-blue-600 mb-3"></div>
-      <span>Mencari foto...</span>
-    </div>
-  `;
-
-  searchTimeout = setTimeout(() => {
-    updatePhotoGallery(false);
-  }, 400); // 400ms jeda agar halus
-});
-
-
-    // Update document displays
-    function updateDocumentDisplay() {
-        updateDocumentGrid();
-        updatePublicDocumentGrid();
-    }
-
-    function updateDocumentGrid() {
-        const filterCategory = document.getElementById('filter-category')?.value;
-        const filteredDocs = filterCategory ? documents.filter(doc => doc.category === filterCategory) : documents;
-        const container = document.getElementById('documents-grid');
-        if (!container) return;
-        if (filteredDocs.length === 0) {
-            container.innerHTML = `<div class="text-center text-gray-400 py-12 col-span-full">\n                        <div class="text-6xl mb-4">📄</div>\n                        <p>Belum ada dokumen yang diupload</p>\n                    </div>`;
+        count.textContent = `Total posting: ${filtered.length}`;
+        if (filtered.length === 0) {
+            container.innerHTML = `<div class="text-center text-gray-400 py-12 col-span-full"><div class="text-6xl mb-4">📭</div><p>Belum ada posting.</p></div>`;
             return;
         }
-        container.innerHTML = filteredDocs.map(doc => `\n            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors duration-200">\n                <div class="flex items-start justify-between mb-3">\n                    <div class="text-3xl">${getFileIcon(doc.fileExtension)}</div>\n                    ${isAdminLoggedIn() ? `<button onclick="deleteDocument(${doc.id}, '${doc.url.split('/').pop()}')" class="text-red-500 hover:text-red-700 text-sm">🗑️</button>` : ''}\n                </div>\n                <h4 class="font-semibold text-gray-800 mb-2 line-clamp-2">${doc.title}</h4>\n                <div class="text-sm text-gray-600 space-y-1">\n                    <p><span class="font-medium">Kategori:</span> ${getCategoryIcon(doc.category)} ${doc.category}</p>\n                    <p><span class="font-medium">File:</span> ${doc.fileName}</p>\n                    <p><span class="font-medium">Ukuran:</span> ${doc.fileSize} MB</p>\n                    <p><span class="font-medium">Tanggal:</span> ${doc.date}</p>\n                    ${doc.description ? `<p><span class="font-medium">Deskripsi:</span> ${doc.description}</p>` : ''}\n                </div>\n                <div class="mt-3 pt-3 border-t border-gray-200">\n                    <p class="text-xs text-gray-500">Upload: ${doc.uploadDate}</p>\n                </div>\n            </div>\n        `).join('');
+
+        container.innerHTML = filtered.map(p => {
+            const isImage = (p.file_type||'').startsWith('image');
+            const isVideo = (p.file_type||'').startsWith('video');
+            const safeTitle = (p.title || '').replace(/"/g,'&quot;');
+            const uploader = p.uploader || '';
+            const date = p.date || '';
+            const uploaded = p.upload_date || '';
+            const fileName = p.file_name || '';
+            const fileUrl = p.file_url || '';
+            const fileSize = p.file_size ? `${p.file_size} MB` : '';
+            // Admin buttons
+            const adminBtns = isAdminLoggedIn() ? `
+                <div class="flex items-center space-x-2 mt-3">
+                  <button onclick="editPost(${p.id})" class="px-3 py-1 bg-yellow-400 text-xs rounded-lg">✏️ Edit</button>
+                  <button onclick="deletePost(${p.id}, '${fileUrl.split('/').pop()}')" class="px-3 py-1 bg-red-600 text-white text-xs rounded-lg">🗑️ Hapus</button>
+                </div>` : '';
+
+            // Media HTML
+            let mediaHtml = '';
+            if (isImage) {
+                mediaHtml = `<img src="${fileUrl}" alt="${safeTitle}" class="w-full h-56 object-cover rounded-t-lg">`;
+            } else if (isVideo) {
+                mediaHtml = `<video controls playsinline class="w-full h-56 object-cover rounded-t-lg" src="${fileUrl}"></video>`;
+            } else {
+                // document / other
+                mediaHtml = `<div class="w-full h-56 flex items-center justify-center bg-gray-50 rounded-t-lg">
+                                <div class="text-center">
+                                  <div class="text-6xl">📄</div>
+                                  <div class="mt-2 text-sm text-gray-600">${fileName}</div>
+                                </div>
+                             </div>`;
+            }
+
+            return `
+              <div class="bg-white rounded-xl overflow-hidden shadow-md p-0 media-card slide-in">
+                ${mediaHtml}
+                <div class="p-4">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <h3 class="font-semibold text-gray-800">${safeTitle}</h3>
+                      <p class="text-xs text-gray-500 mt-1">${date ? '📅 ' + date : ''} ${uploader ? ' • 👤 ' + uploader : ''}</p>
+                    </div>
+                    <div class="text-sm text-gray-500">${fileSize}</div>
+                  </div>
+                  <p class="text-sm text-gray-600 mt-3 line-clamp-3">${p.description || ''}</p>
+                  <div class="mt-4 flex items-center justify-between">
+                    <div>
+                      ${isImage || isVideo ? `<a href="${fileUrl}" target="_blank" class="text-blue-600 text-sm font-medium">🔍 Lihat</a>` : `<a href="${fileUrl}" target="_blank" class="text-blue-600 text-sm font-medium">📥 Download</a>`}
+                    </div>
+                    ${adminBtns}
+                  </div>
+                </div>
+              </div>
+            `;
+        }).join('');
     }
 
-    function updatePublicDocumentGrid() {
-        const container = document.getElementById('public-documents-grid');
-        const countDiv = document.getElementById('document-count');
-        if (!container) return;
-        countDiv.textContent = `Total dokumen: ${documents.length}`;
-        if (documents.length === 0) {
-            container.innerHTML = `\n                <div class="text-center text-gray-400 py-12 col-span-full">\n                    <div class="text-6xl mb-4">📄</div>\n                    <p>Belum ada dokumen yang diupload</p>\n                    <p class="text-sm mt-2">Admin dapat upload dokumen di menu "Upload Dokumen"</p>\n                </div>\n            `;
-            return;
-        }
-        container.innerHTML = documents.map(doc => `\n            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors duration-200 slide-in">\n                <div class="text-3xl mb-3">${getFileIcon(doc.fileExtension)}</div>\n                <h4 class="font-semibold text-gray-800 mb-2 line-clamp-2">${doc.title}</h4>\n                <div class="text-sm text-gray-600 space-y-1">\n                    <p>${getCategoryIcon(doc.category)} ${doc.category}</p>\n                    <p>📅 ${doc.date}</p>\n                    <p>📁 ${doc.fileName}</p>\n                    <p>💾 ${doc.fileSize} MB</p>\n                    ${doc.description ? `<p class="text-xs mt-2 text-gray-500">${doc.description}</p>` : ''}\n                </div>\n                <div class="mt-3 pt-3 border-t border-gray-200">\n                    <a href="${doc.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">📥 Download</a>\n                </div>\n            </div>\n        `).join('');
-    }
-
-    function getFileIcon(extension) {
-        const icons = { 'pdf': '📄', 'doc': '📝', 'docx': '📝', 'xls': '📊', 'xlsx': '📊', 'ppt': '📽️', 'pptx': '📽️', 'mp4': '🎥', 'avi': '🎥', 'mov': '🎥', 'wmv': '🎥' };
-        return icons[extension] || '📄';
-    }
-
-    function getCategoryIcon(category) {
-        const icons = { 'laporan': '📊', 'presentasi': '📽️', 'video': '🎥', 'surat': '📝', 'data': '📈', 'lainnya': '📄' };
-        return icons[category] || '📄';
-    }
-
-    // ===== UPLOAD PHOTO (admin only) =====
-    document.getElementById('photo-input').addEventListener('change', function(e) {
-        const fileCount = e.target.files.length;
-        if (fileCount > 0) {
-            const label = e.target.parentElement.querySelector('p');
-            if (label) label.textContent = `${fileCount} foto dipilih`;
-        }
+    // Search/filter listeners
+    document.getElementById('post-filter')?.addEventListener('change', renderPosts);
+    document.getElementById('post-search')?.addEventListener('input', () => {
+        clearTimeout(window.postSearchTimeout);
+        window.postSearchTimeout = setTimeout(renderPosts, 300);
     });
 
-    document.getElementById('upload-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        if (!isAdminLoggedIn()) return alert('Hanya admin yang dapat mengupload. Silakan login.');
-        const fileInput = document.getElementById('photo-input');
-        const titleInput = document.getElementById('photo-title');
-        const dateInput = document.getElementById('photo-date');
-        if (fileInput.files.length === 0) return alert('Silakan pilih foto terlebih dahulu!');
-        const title = titleInput.value || 'Dokumentasi OSIS';
-        const date = dateInput.value || new Date().toISOString().split('T')[0];
-        for (const file of Array.from(fileInput.files)) {
-            const fileName = `${Date.now()}_${file.name}`;
-            const { error: uploadError } = await supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file);
-            if (uploadError) { alert('Gagal upload: ' + uploadError.message); return; }
-            const { data: publicData } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName);
-            const url = publicData.publicUrl;
-            const { error: insertError } = await supabaseClient.from('photos').insert({ title, date, upload_date: new Date().toISOString(), url });
-            if (insertError) { console.error('Gagal simpan metadata:', insertError.message); alert('Upload berhasil tapi gagal simpan metadata.'); }
-        }
-        document.getElementById('photo-input').value = '';
-        titleInput.value = '';
-        dateInput.value = '';
-        showStatus(`${fileInput.files.length} foto berhasil diupload ke server! 🌐`, 'success');
-        await loadPhotos();
-    });
-
-    // Delete photo (admin) - also remove from storage and DB
-    async function deletePhoto(photoId, fileName) {
-        if (!confirm('Yakin ingin menghapus foto ini?')) return;
-        try {
-            const { error: delDbError } = await supabaseClient.from('photos').delete().eq('id', photoId);
-            if (delDbError) throw delDbError;
-            // remove from storage
-            const { error: delStorageError } = await supabaseClient.storage.from(BUCKET_NAME).remove([fileName]);
-            if (delStorageError) console.warn('Gagal hapus file di storage:', delStorageError.message);
-            await loadPhotos();
-            showStatus('Foto berhasil dihapus.', 'success');
-        } catch (err) {
-            console.error(err);
-            alert('Gagal menghapus foto: ' + (err.message || err));
-        }
-    }
-
-    // ===== UPLOAD DOCUMENT (admin only) =====
-    document.getElementById('document-input').addEventListener('change', function(e) {
+    // ===== Upload handling (single form for all types) =====
+    const postInput = document.getElementById('post-input');
+    postInput.addEventListener('change', function(e) {
+        const label = document.getElementById('post-input-label');
         if (e.target.files.length > 0) {
-            const file = e.target.files[0];
-            const label = e.target.parentElement.querySelector('p');
-            const fileSize = (file.size / 1024 / 1024).toFixed(2);
-            if (label) label.innerHTML = `\n                    <strong>File dipilih:</strong> ${file.name}<br>\n                    <span class="text-xs">Ukuran: ${fileSize} MB</span>\n                `;
+            const f = e.target.files[0];
+            label.textContent = `${f.name} (${(f.size/1024/1024).toFixed(2)} MB)`;
+        } else {
+            label.textContent = 'Klik untuk memilih file';
         }
     });
 
-    document.getElementById('document-upload-form').addEventListener('submit', async function(e) {
+    document.getElementById('universal-upload-form').addEventListener('submit', async function(e) {
         e.preventDefault();
-        if (!isAdminLoggedIn()) return alert('Hanya admin yang dapat mengupload. Silakan login.');
-        const fileInput = document.getElementById('document-input');
-        const titleInput = document.getElementById('document-title');
-        const categoryInput = document.getElementById('document-category');
-        const descriptionInput = document.getElementById('document-description');
-        const dateInput = document.getElementById('document-date');
+        if (!isAdminLoggedIn()) { alert('Hanya admin yang dapat mengupload. Silakan login.'); return; }
+        const fileEl = document.getElementById('post-input');
+        if (!fileEl.files || fileEl.files.length === 0) { showUploadStatus('Silakan pilih file terlebih dahulu!', 'error'); return; }
+        const file = fileEl.files[0];
+        const title = document.getElementById('post-title').value || 'Postingan OSIS';
+        const description = document.getElementById('post-description').value || '';
+        const date = document.getElementById('post-date').value || new Date().toISOString().split('T')[0];
+        const tagsRaw = document.getElementById('post-tags').value || '';
+        const tags = tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
+        // Validate file size (limit example 150MB) - adjust as needed
+        const maxMB = 150;
+        if ((file.size / 1024 / 1024) > maxMB) { showUploadStatus(`File terlalu besar. Maks ${maxMB} MB.`, 'error'); return; }
+
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const fileType = file.type || (fileExt === 'pdf' ? 'application/pdf' : '');
+
+        // create unique filename
+        const fileName = `${Date.now()}_${file.name.replace(/\s+/g,'_')}`;
+
+        // show loading
         const submitBtn = e.target.querySelector('button[type="submit"]');
-        if (fileInput.files.length === 0) { showDocumentStatus('Silakan pilih dokumen terlebih dahulu!', 'error'); return; }
-        const file = fileInput.files[0];
-        const allowedExtensions = ['pdf','doc','docx','xls','xlsx','ppt','pptx','mp4','avi','mov','wmv'];
-        const fileExtension = file.name.split('.').pop().toLowerCase();
-        if (!allowedExtensions.includes(fileExtension)) { showDocumentStatus('Format file tidak didukung!', 'error'); return; }
-        showDocumentLoading(true, submitBtn);
+        showUploadLoading(true, submitBtn);
+
         try {
-            const fileName = `${Date.now()}_${file.name}`;
-            // upload file
-            const { error: uploadError } = await supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file);
+            // upload to Supabase storage
+            const { error: uploadError } = await supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file, { cacheControl: '3600', upsert: false });
             if (uploadError) throw uploadError;
             const { data: publicData } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName);
-            const url = publicData.publicUrl;
-            const docObj = {
-                title: titleInput.value,
-                category: categoryInput.value,
-                description: descriptionInput.value,
-                date: dateInput.value,
-                fileName: file.name,
-                fileExtension,
-                fileSize: (file.size / 1024 / 1024).toFixed(2),
-                url,
-                uploadDate: new Date().toLocaleString('id-ID')
+            const publicUrl = publicData.publicUrl;
+
+            // determine category (image, video, dokumen)
+            let category = 'lainnya';
+            if ((fileType||'').startsWith('image')) category = 'image';
+            else if ((fileType||'').startsWith('video')) category = 'video';
+            else category = 'dokumen';
+
+            // file size MB
+            const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+
+            // insert metadata to table 'posts' (schema public by default)
+            const insertObj = {
+                title,
+                description,
+                category,
+                file_url: publicUrl,
+                file_type: fileType,
+                file_name: file.name,
+                date,
+                upload_date: new Date().toISOString(),
+                file_size: fileSizeMB,
+                uploader: getAdminUsername(),
+                tags
             };
-            const { error: insertError } = await supabaseClient.from('documents').insert(docObj);
+
+            const { error: insertError } = await supabaseClient.from('posts').insert(insertObj);
             if (insertError) throw insertError;
-            showDocumentStatus(`Dokumen "${titleInput.value}" berhasil diupload! 📄`, 'success');
-            document.getElementById('document-upload-form').reset();
-            resetDocumentFileInput();
-            showDocumentLoading(false, submitBtn);
-            await loadDocuments();
+
+            // reset form
+            document.getElementById('universal-upload-form').reset();
+            document.getElementById('post-input-label').textContent = 'Klik untuk memilih file';
+            showUploadStatus('File berhasil diupload ke server! 🎉', 'success');
+            await loadPosts();
         } catch (err) {
-            showDocumentLoading(false, submitBtn);
-            console.error(err);
-            showDocumentStatus('Gagal mengupload dokumen: ' + (err.message || err), 'error');
+            console.error('Upload gagal:', err);
+            showUploadStatus('Gagal upload: ' + (err.message || err), 'error');
+        } finally {
+            showUploadLoading(false, submitBtn);
         }
     });
 
-    async function deleteDocument(docId, fileName) {
-        if (!confirm('Yakin ingin menghapus dokumen ini?')) return;
-        try {
-            const { error: delDbError } = await supabaseClient.from('documents').delete().eq('id', docId);
-            if (delDbError) throw delDbError;
-            const { error: delStorageError } = await supabaseClient.storage.from(BUCKET_NAME).remove([fileName]);
-            if (delStorageError) console.warn('Gagal hapus file di storage:', delStorageError.message);
-            await loadDocuments();
-            showDocumentStatus('Dokumen berhasil dihapus!', 'success');
-        } catch (err) {
-            console.error(err);
-            alert('Gagal menghapus dokumen: ' + (err.message || err));
-        }
-    }
-
-    function clearAllDocuments() {
-        if (!confirm('Yakin ingin menghapus SEMUA dokumen? Tindakan ini tidak dapat dibatalkan!')) return;
-        // NOTE: bulk delete both DB rows and storage files would require listing and removing each file.
-        // For safety, we only clear DB rows here (admin can remove files separately).
-        (async () => {
-            try {
-                const ids = documents.map(d => d.id);
-                if (ids.length === 0) return;                
-                const { error } = await supabaseClient.from('documents').delete().in('id', ids);
-                if (error) throw error;
-                await loadDocuments();
-                showDocumentStatus('Semua dokumen berhasil dihapus!', 'success');
-            } catch (err) {
-                console.error(err);
-                showDocumentStatus('Gagal menghapus semua dokumen: ' + (err.message || err), 'error');
-            }
-        })();
-    }
-
-    function showStatus(message, type) {
+    function showUploadStatus(message, type) {
         const statusDiv = document.getElementById('upload-status');
         statusDiv.className = `mt-4 text-center p-3 rounded-lg ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
         statusDiv.textContent = message;
         statusDiv.classList.remove('hidden');
-        setTimeout(() => { statusDiv.classList.add('hidden'); }, 3000);
+        setTimeout(() => statusDiv.classList.add('hidden'), 4000);
     }
-
-    function showDocumentStatus(message, type) {
-        const statusDiv = document.getElementById('document-status');
-        statusDiv.className = `mt-4 text-center p-3 rounded-lg ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
-        statusDiv.textContent = message;
-        statusDiv.classList.remove('hidden');
-        setTimeout(() => { statusDiv.classList.add('hidden'); }, 4000);
-    }
-
-    function showDocumentLoading(isLoading, submitBtn) {
-        const statusDiv = document.getElementById('document-status');
+    function showUploadLoading(isLoading, btn) {
+        const statusDiv = document.getElementById('upload-status');
         if (isLoading) {
             statusDiv.className = 'mt-4 text-center p-3 rounded-lg bg-blue-100 text-blue-700';
-            statusDiv.innerHTML = `<div class="flex items-center justify-center space-x-2"><div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div><span>Sedang mengupload dokumen...</span></div>`;
+            statusDiv.innerHTML = `<div class="flex items-center justify-center space-x-2"><div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div><span>Mengupload...</span></div>`;
             statusDiv.classList.remove('hidden');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<div class="flex items-center justify-center space-x-2"><div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div><span>Mengupload...</span></div>`;
-            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            if (btn) { btn.disabled = true; btn.classList.add('opacity-75','cursor-not-allowed'); btn.innerHTML = '<div class="flex items-center justify-center space-x-2"><div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div><span>Mengupload...</span></div>'; }
         } else {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = `<span>📤</span><span>Upload Dokumen</span>`;
-            submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            if (btn) { btn.disabled = false; btn.classList.remove('opacity-75','cursor-not-allowed'); btn.innerHTML = '<span>📤</span><span>Upload</span>'; }
+            setTimeout(() => statusDiv.classList.add('hidden'), 800);
         }
     }
 
-    function resetDocumentFileInput() {
-        const fileInput = document.getElementById('document-input');
-        const label = fileInput.parentElement.querySelector('p');
-        fileInput.value = '';
-        if (label) label.textContent = 'Klik untuk memilih dokumen';
+    // ===== Edit / Delete (admin) =====
+    async function deletePost(postId, fileName) {
+        if (!confirm('Yakin ingin menghapus posting ini?')) return;
+        try {
+            const { error: delDbErr } = await supabaseClient.from('posts').delete().eq('id', postId);
+            if (delDbErr) throw delDbErr;
+            // remove file from storage (best-effort)
+            try {
+                const { error: delStorErr } = await supabaseClient.storage.from(BUCKET_NAME).remove([fileName]);
+                if (delStorErr) console.warn('Gagal hapus file storage:', delStorErr.message);
+            } catch(e) { console.warn(e); }
+            await loadPosts();
+            showUploadStatus('Posting berhasil dihapus.', 'success');
+        } catch (err) {
+            console.error(err);
+            alert('Gagal menghapus posting: ' + (err.message || err));
+        }
     }
 
-    function downloadFile(dataUrl, fileName) {
-        if (!dataUrl) { alert('File tidak tersedia untuk diunduh.'); return; }
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+    function editPost(id) {
+        const post = posts.find(p => p.id === id);
+        if (!post) return alert('Posting tidak ditemukan');
+        const newTitle = prompt('Ubah judul:', post.title);
+        if (newTitle === null) return;
+        const newDesc = prompt('Ubah deskripsi:', post.description || '');
+        if (newDesc === null) return;
+        (async () => {
+            try {
+                const { error } = await supabaseClient.from('posts').update({ title: newTitle, description: newDesc }).eq('id', id);
+                if (error) throw error;
+                showUploadStatus('Posting berhasil diperbarui!', 'success');
+                await loadPosts();
+            } catch (err) {
+                console.error(err);
+                showUploadStatus('Gagal memperbarui posting: ' + (err.message || err), 'error');
+            }
+        })();
     }
 
-    // Document filter
-    document.getElementById('filter-category')?.addEventListener('change', updateDocumentGrid);
-
-    // Set default date to today for document upload
-    document.getElementById('document-date').value = new Date().toISOString().split('T')[0];
-
-    // Init on load
+    // ===== Init =====
     (async function init() {
-        await loadPhotos();
-        await loadDocuments();
+        // default date field value
+        document.getElementById('post-date').value = new Date().toISOString().split('T')[0];
+        await loadPosts();
         updateAdminUI();
+        showSection('beranda');
     })();
 
-    // Close modal when clicking outside
-    document.getElementById('login-modal').addEventListener('click', function(e) {
-        if (e.target === this) hideLoginModal();
-    });
-
-    // Close modal with Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') hideLoginModal();
-    });
-    // Efek klik membesar + tampilkan caption dan tombol admin
-function activatePhoto(element, id, fileName, title, date) {
-  // Edit nama dan tanggal foto (Admin Only)
-async function editPhoto(photoId, oldTitle, oldDate) {
-  const newTitle = prompt("Ubah nama foto:", oldTitle);
-  if (newTitle === null) return; // batal
-  const newDate = prompt("Ubah tanggal kegiatan (YYYY-MM-DD):", oldDate);
-  if (newDate === null) return;
-
-  try {
-    const { error } = await supabaseClient
-      .from('photos')
-      .update({ title: newTitle, date: newDate })
-      .eq('id', photoId);
-    if (error) throw error;
-    showStatus("📸 Data foto berhasil diperbarui!", "success");
-    await loadPhotos();
-  } catch (err) {
-    console.error(err);
-    showStatus("❌ Gagal memperbarui foto: " + (err.message || err), "error");
-  }
-}
-
-  // Tutup foto lain
-  document.querySelectorAll('#photo-container .group').forEach(el => {
-    if (el !== element) {
-      el.querySelector('img').classList.remove('scale-110');
-      el.querySelector('div.absolute.bottom-0').classList.add('translate-y-full', 'opacity-0');
-      el.querySelectorAll('button').forEach(btn => btn.classList.add('opacity-0'));
-    }
-  });
-
-  // Toggle aktif pada foto diklik
-  const img = element.querySelector('img');
-  const caption = element.querySelector('div.absolute.bottom-0');
-  const buttons = element.querySelectorAll('button');
-
-  const isActive = img.classList.contains('scale-110');
-  if (isActive) {
-    img.classList.remove('scale-110');
-    caption.classList.add('translate-y-full', 'opacity-0');
-    buttons.forEach(btn => btn.classList.add('opacity-0'));
-  } else {
-    img.classList.add('scale-110');
-    caption.classList.remove('translate-y-full', 'opacity-0');
-    buttons.forEach(btn => btn.classList.remove('opacity-0'));
-  }
-}
+    // close modal on outside click or ESC
+    document.getElementById('login-modal').addEventListener('click', function(e) { if (e.target === this) hideLoginModal(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') hideLoginModal(); });
 
     </script>
 </body>
