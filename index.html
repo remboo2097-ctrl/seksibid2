@@ -3,222 +3,376 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>OSIS Sekbid 2 — Postingan</title>
+    <title>OSIS Sekbid 2 — Postingan (TikTok-style)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
     <style>
         body { box-sizing: border-box; }
         .nav-scrollbar::-webkit-scrollbar { height: 8px; }
         .nav-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
         .nav-scrollbar::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
-        .nav-scrollbar::-webkit-scrollbar-thumb:hover { background: #2563eb; }
         .photo-gallery::-webkit-scrollbar { height: 12px; }
         .photo-gallery::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; }
         .photo-gallery::-webkit-scrollbar-thumb { background: #64748b; border-radius: 10px; }
-        .photo-gallery::-webkit-scrollbar-thumb:hover { background: #475569; }
         .fade-in { animation: fadeIn 0.45s ease-in; }
-        @keyframes bounceSlow {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-.animate-bounce-slow {
-  animation: bounceSlow 2s infinite;
-}
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .slide-in { animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { transform: translateX(-10px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         header { position: relative; z-index: 20; }
         main { position: relative; z-index: 1; }
-        #login-modal { z-index: 9999; }
-        /* small helpers */
-        .media-card:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 10px 25px rgba(2,6,23,0.08); }
+
+        /* TikTok-style feed */
+        .feed-wrap { position: relative; width: 100%; }
+        .video-feed {
+            scroll-snap-type: y mandatory;
+            overflow-y: auto;
+            height: calc(100vh - 72px); /* will adjust to bottom nav */
+            -webkit-overflow-scrolling: touch;
+        }
+        .video-card {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 72px);
+            scroll-snap-align: start;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            overflow: hidden;
+        }
+        .video-card video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+        /* right-side controls */
+        .video-controls {
+            position: absolute;
+            right: 14px;
+            bottom: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            z-index: 30;
+        }
+        .vc-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            backdrop-filter: blur(4px);
+        }
+        .caption-box {
+            position: absolute;
+            left: 16px;
+            bottom: 26px;
+            right: 96px;
+            color: white;
+            z-index: 30;
+            text-shadow: 0 3px 12px rgba(0,0,0,0.6);
+        }
+        .caption-title { font-weight: 700; font-size: 18px; margin-bottom: 6px; }
+        .caption-desc { font-size: 14px; opacity: 0.95; }
+
+        /* bottom nav */
+        .bottom-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 72px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,1));
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid rgba(0,0,0,0.06);
+            z-index: 60;
+            backdrop-filter: blur(6px);
+        }
+        .bottom-btn { display:flex; flex-direction:column; align-items:center; font-size:12px; color:#374151; }
+        .bottom-btn.active { color:#0ea5e9; font-weight:600; }
+
+        /* smaller helper */
+        .mini-muted {
+            position: absolute;
+            left: 12px;
+            top: 12px;
+            z-index: 40;
+            background: rgba(0,0,0,0.45);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+
+        /* Postingan grid tweaks */
+        #posts-grid { margin-top: 12px; }
+
+        /* adjust for mobile safe area */
+        @media (max-width: 640px) {
+            .video-controls { right: 10px; bottom: 110px; gap: 10px; }
+            .vc-btn { width: 46px; height: 46px; border-radius: 10px; }
+            .caption-box { bottom: 20px; right: 86px; left: 12px; }
+        }
+        .vc-btn.liked {
+  color: red !important;
+  transform: scale(1.1);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+/* 🎥 Gaya interaktif video ala TikTok */
+.video-overlay-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px;
+  height: 100px;
+  background: rgba(255,255,255,0.75);
+  clip-path: polygon(25% 20%, 25% 80%, 80% 50%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  border-radius: 50%;
+  box-shadow: 0 0 25px rgba(0,0,0,0.3);
+}
+.video-overlay-icon.visible {
+  opacity: 1;
+}
+
+.video-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+}
+.video-progress-filled {
+  height: 100%;
+  width: 0%;
+  background: white;
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+/* Like animasi */
+.vc-btn.liked {
+  color: red !important;
+  transform: scale(1.1);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
     </style>
 </head>
 <body class="h-full bg-gradient-to-br from-blue-50 to-indigo-100 font-sans">
-    <!-- Header -->
+    <!-- Header (kehilangan tombol navigasi utama — navigasi pindah ke bottom) -->
     <header class="bg-white shadow-lg border-b-4 border-blue-500">
-        <div class="max-w-7xl mx-auto px-4 py-6">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center">
-                        <img src="https://i.ibb.co/V0ZqpRFw/get-removebg-preview.png" alt="logo" class="w-10 h-10 object-contain">
-                    </div>
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-800">OSIS Sekbid 2</h1>
-                        <p class="text-sm text-gray-600">Organisasi Siswa Intra Sekolah</p>
-                    </div>
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center bg-white">
+                    <img src="https://i.ibb.co/V0ZqpRFw/get-removebg-preview.png" alt="logo" class="w-8 h-8 object-contain">
                 </div>
-                <div class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
-                    <span>📅 2025</span>
-                    <span>•</span>
-                    <span>🏫 Sekbid 2</span>
+                <div>
+                    <h1 class="text-lg font-bold text-gray-800">OSIS Sekbid 2</h1>
+                    <p class="text-xs text-gray-500">Organisasi Siswa Intra Sekolah</p>
                 </div>
+            </div>
+
+            <div class="flex items-center space-x-2 text-sm text-gray-600">
+                <button id="login-btn" onclick="showLoginModal()" class="px-3 py-1 bg-gray-600 text-white rounded-full text-sm">🔐 Login</button>
+                <button id="logout-btn" onclick="logout()" class="hidden px-3 py-1 bg-red-600 text-white rounded-full text-sm">🚪 Logout</button>
             </div>
         </div>
     </header>
 
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm border-b sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="nav-scrollbar overflow-x-auto">
-                <div class="flex justify-between items-center py-4">
-                    <div class="flex space-x-1 min-w-max">
-                        <button onclick="showSection('beranda')" id="nav-beranda" class="nav-btn px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 bg-blue-600 text-white">
-                            🏠 Beranda
-                        </button>
-                        <button onclick="showSection('posting')" id="nav-posting" class="nav-btn px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-100">
-                            📢 Postingan
-                        </button>
-                        <button onclick="showSection('upload')" id="nav-upload" class="nav-btn px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-100">
-                            📤 Upload
-                        </button>
-                        <button onclick="showSection('kontak')" id="nav-kontak" class="nav-btn px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-100">
-                            📞 Kontak
-                        </button>
-                        <button onclick="showSection('tentang')" id="nav-tentang" class="nav-btn px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-100">
-                            ℹ️ Tentang Kami
-                        </button>
-                    </div>
-                    <div class="flex items-center space-x-2 ml-4">
-                        <div id="admin-status" class="hidden text-sm text-green-600 font-medium">👤 Admin</div>
-                        <button id="login-btn" onclick="showLoginModal()" class="px-4 py-2 bg-gray-600 text-white rounded-full text-sm font-medium hover:bg-gray-700 transition-colors duration-200">🔐 Login Admin</button>
-                        <button id="logout-btn" onclick="logout()" class="hidden px-4 py-2 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition-colors duration-200">🚪 Logout</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
-
     <!-- Main -->
-    <main class="max-w-7xl mx-auto px-4 py-8">
-        <!-- Beranda -->
+    <main class="max-w-7xl mx-auto px-0 py-0">
+        <!-- Beranda (TikTok-style video feed) -->
         <section id="beranda" class="section-content fade-in">
-            <div class="text-center mb-12">
-                <h2 class="text-4xl font-bold text-gray-800 mb-4">Selamat Datang di OSIS SMK AL-HADI Sekbid 2</h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">Website resmi Organisasi Siswa Intra Sekolah Sekbid 2. Tempat berbagi dokumentasi kegiatan dan informasi terkini.</p>
-            </div>
-            <div class="grid md:grid-cols-3 gap-8 mb-12">
-                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                    <div class="text-4xl mb-4">🎯</div>
-                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Visi Kami</h3>
-                    <p class="text-gray-600">Mewujudkan peserta didik yang berkarakter mulia, berbudi pekerti luhur, berakhlak Islami, dan membangun kepedulian siswa tentang kebersihan.</p>
-                </div>
-                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                    <div class="text-4xl mb-4">🚀</div>
-                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Misi Kami</h3>
-                    <p class="text-gray-600">Mengembangkan Program Pembiasaan seperti 5S dan membangun lingkungan sekolah yang harmonis.</p>
-                </div>
-                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                    <div class="text-4xl mb-4">🤝</div>
-                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Nilai Kami</h3>
-                    <p class="text-gray-600">Integritas, kerjasama, inovasi, dan dedikasi untuk siswa siswi dan sekolah.</p>
+            <div class="feed-wrap">
+                <div id="video-feed" class="video-feed bg-black">
+                    <!-- video cards inserted by JS -->
+                    <div id="empty-feed" class="text-center text-white py-12 hidden">
+                        <div class="text-2xl mb-2">Tidak ada video.</div>
+                        <div class="text-sm opacity-80">Coba buka menu Postingan untuk lihat semua file.</div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Postingan (gabungan foto/video/dokumen) -->
-        <!-- Header Postingan -->
-        <section id="posting" class="section-content hidden">
-<div class="text-center mb-8">
-  <div class="flex justify-center items-center space-x-2 mb-3">
-    <span class="text-4xl animate-bounce-slow">📢</span>
-    <h2 class="text-4xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-      Postingan
-    </h2>
-  </div>
-  <p class="text-gray-600 text-base">📸 Semua konten menarik: foto, video, dan dokumen kegiatan OSIS Sekbid 2</p>
-</div>
-
-<!-- Card filter/search -->
-<div class="bg-white shadow-md rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between mb-8 border border-gray-100">
-  <div class="flex items-center space-x-2 mb-3 md:mb-0">
-    <span class="text-sm text-gray-500">📊 Total posting:</span>
-    <span id="post-count" class="text-sm font-semibold text-blue-600">0</span>
-  </div>
-  <div class="flex items-center space-x-2 w-full md:w-auto">
-    <div class="relative flex-1">
-      <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
-      <input id="post-search" type="text" placeholder="Cari judul atau tag..."
-        class="w-full md:w-64 pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 transition-all duration-200">
-    </div>
-    <select id="post-filter"
-      class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
-      <option value="">Semua</option>
-      <option value="image">📷 Foto</option>
-      <option value="video">🎥 Video</option>
-      <option value="dokumen">📄 Dokumen</option>
-    </select>
-  </div>
-</div>
-
+        <!-- Postingan (grid gabungan foto/video/dokumen) -->
+        <section id="posting" class="section-content hidden px-4 py-6">
+            <div class="bg-white shadow-md rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between mb-4 border border-gray-100">
+                <div class="flex items-center space-x-2 mb-3 md:mb-0">
+                    <span class="text-sm text-gray-500">📊 Total posting:</span>
+                    <span id="post-count" class="text-sm font-semibold text-blue-600">0</span>
+                </div>
+                <div class="flex items-center space-x-2 w-full md:w-auto">
+                    <div class="relative flex-1">
+                        <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
+                        <input id="post-search" type="text" placeholder="Cari judul atau tag..."
+                            class="w-full md:w-64 pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 placeholder-gray-400 transition-all duration-200">
+                    </div>
+                    <select id="post-filter"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 transition-all duration-200">
+                        <option value="">Semua</option>
+                        <option value="image">📷 Foto</option>
+                        <option value="video">🎥 Video</option>
+                        <option value="dokumen">📄 Dokumen</option>
+                    </select>
+                </div>
+            </div>
             <div id="posts-grid" class="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </section>
 
-        <!-- Upload (satu form untuk semua tipe file) -->
-        <section id="upload" class="section-content hidden">
-            <div class="text-center mb-6">
-                <h2 class="text-3xl font-bold text-gray-800 mb-2">📤 Upload</h2>
-                <p class="text-gray-600">Upload foto, video, atau dokumen. (Hanya admin)</p>
-            </div>
-
+        <!-- Upload (satu form untuk semua tipe file + tab Grafik) -->
+        <section id="upload" class="section-content hidden px-4 py-6">
             <div id="upload-access-denied" class="text-center py-20">
                 <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
                     <div class="text-6xl mb-4">🔒</div>
                     <h2 class="text-2xl font-bold text-gray-800 mb-4">Akses Terbatas</h2>
                     <p class="text-gray-600 mb-6">Halaman upload hanya dapat diakses oleh admin.</p>
-                    <button onclick="showLoginModal()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200">🔐 Login sebagai Admin</button>
+                    <button onclick="showLoginModal()" class="bg-blue-600 text-white px-6 py-3 rounded-lg">🔐 Login sebagai Admin</button>
                 </div>
             </div>
 
             <div id="upload-form-container" class="hidden max-w-2xl mx-auto">
-                <div class="bg-white rounded-xl shadow-lg p-8">
-                    <form id="universal-upload-form" class="space-y-6" enctype="multipart/form-data">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Pilih File (foto / video / dokumen)</label>
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors duration-200">
-                                <input type="file" id="post-input" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" class="hidden">
-                                <div onclick="document.getElementById('post-input').click()" class="cursor-pointer">
-                                    <div class="text-4xl mb-2">📁</div>
-                                    <p id="post-input-label" class="text-gray-600">Klik untuk memilih file</p>
-                                    <p class="text-sm text-gray-400 mt-1">Mendukung: JPG, PNG, GIF, MP4, MOV, PDF, DOCX, PPTX, XLSX</p>
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <!-- Tabs -->
+                    <div class="flex space-x-2 mb-6">
+                        <button id="tab-upload-files" class="px-4 py-2 bg-blue-600 text-white rounded-lg">📁 Upload File</button>
+                        <button id="tab-upload-grafik" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg">📊 Upload Grafik Siswa</button>
+                    </div>
+
+                    <div id="tab-files-container">
+                        <form id="universal-upload-form" class="space-y-6" enctype="multipart/form-data">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Pilih File (foto / video / dokumen)</label>
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors duration-200">
+                                    <input type="file" id="post-input" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" class="hidden">
+                                    <div onclick="document.getElementById('post-input').click()" class="cursor-pointer">
+                                        <div class="text-4xl mb-2">📁</div>
+                                        <p id="post-input-label" class="text-gray-600">Klik untuk memilih file</p>
+                                        <p class="text-sm text-gray-400 mt-1">Mendukung: JPG, PNG, GIF, MP4, MOV, PDF, DOCX, PPTX, XLSX</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div>
-                            <label for="post-title" class="block text-sm font-medium text-gray-700 mb-2">Judul</label>
-                            <input type="text" id="post-title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Contoh: Kegiatan Bakti Sosial 2025" required>
-                        </div>
-
-                        <div>
-                            <label for="post-description" class="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
-                            <textarea id="post-description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Deskripsi singkat..."></textarea>
-                        </div>
-
-                        <div class="grid md:grid-cols-2 gap-4">
                             <div>
-                                <label for="post-date" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Kegiatan</label>
-                                <input type="date" id="post-date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" value="">
+                                <label for="post-title" class="block text-sm font-medium text-gray-700 mb-2">Judul</label>
+                                <input type="text" id="post-title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Contoh: Kegiatan Bakti Sosial 2025" required>
                             </div>
-                            <div>
-                                <label for="post-tags" class="block text-sm font-medium text-gray-700 mb-2">Tags (pisah dengan koma)</label>
-                                <input type="text" id="post-tags" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="OSIS, Kegiatan, 2025">
-                            </div>
-                        </div>
 
-                        <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center space-x-2">
-                            <span>📤</span><span>Upload</span>
-                        </button>
-                        <div id="upload-status" class="mt-4 text-center hidden"></div>
-                    </form>
+                            <div>
+                                <label for="post-description" class="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
+                                <textarea id="post-description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Deskripsi singkat..."></textarea>
+                            </div>
+
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="post-date" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Kegiatan</label>
+                                    <input type="date" id="post-date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" value="">
+                                </div>
+                                <div>
+                                    <label for="post-tags" class="block text-sm font-medium text-gray-700 mb-2">Tags (pisah dengan koma)</label>
+                                    <input type="text" id="post-tags" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="OSIS, Kegiatan, 2025">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center space-x-2">
+                                <span>📤</span><span>Upload</span>
+                            </button>
+                            <div id="upload-status" class="mt-4 text-center hidden"></div>
+                        </form>
+                    </div>
+
+                    <div id="tab-grafik-container" class="hidden">
+                        <form id="grafik-upload-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nama Siswa</label>
+                                <input type="text" id="grafik-nama" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Masukkan nama siswa" required>
+                            </div>
+                            <div class="grid md:grid-cols-3 gap-4">
+                              <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Jurusan</label>
+                                <select id="grafik-jurusan" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                  <option value="">Pilih jurusan</option>
+                                  <option value="TJKT">TJKT</option>
+                                  <option value="TO">TO</option>
+                                  <option value="AKL">AKL</option>
+                                  <option value="MPLB">MPLB</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Kelas</label>
+                                <select id="grafik-kelas" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                  <option value="">Pilih kelas</option>
+                                  <option value="10">10</option>
+                                  <option value="11">11</option>
+                                  <option value="12">12</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Sub Kelas</label>
+                                <select id="grafik-sub-kelas" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                  <option value="">Pilih</option>
+                                  <option value="1">1</option>
+                                  <option value="2">2</option>
+                                  <option value="3">3</option>
+                                  <option value="4">4</option>
+                                  <option value="5">5</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal (untuk bulan yang dihitung)</label>
+                                <input type="date" id="grafik-tanggal" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" value="">
+                            </div>
+                            <button type="submit" class="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors duration-200">📊 Simpan ke Grafik</button>
+                            <div id="grafik-upload-status" class="mt-4 text-center hidden"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Grafik Siswa -->
+        <section id="grafik" class="section-content hidden px-4 py-6">
+            <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                    <div class="flex items-center space-x-3">
+                        <label class="text-sm text-gray-600">Bulan</label>
+                        <select id="grafik-bulan-select" class="px-3 py-2 border rounded-lg"></select>
+                        <select id="grafik-tahun-select" class="px-3 py-2 border rounded-lg"></select>
+                    </div>
+                    <div>
+                        <button id="refresh-grafik" class="px-4 py-2 bg-blue-600 text-white rounded-lg">🔄 Refresh</button>
+                    </div>
+                </div>
+
+                <div>
+                    <canvas id="grafik-canvas" height="200"></canvas>
                 </div>
             </div>
         </section>
 
         <!-- Kontak -->
-        <section id="kontak" class="section-content hidden">
+        <section id="kontak" class="section-content hidden px-4 py-6">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-800 mb-4">📞 Hubungi Kami</h2>
                 <p class="text-gray-600">Informasi kontak pengurus OSIS Sekbid 2</p>
@@ -279,11 +433,7 @@
         </section>
 
         <!-- Tentang -->
-        <section id="tentang" class="section-content hidden">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-800 mb-4">ℹ️ Tentang OSIS Sekbid 2</h2>
-                <p class="text-gray-600">Mengenal lebih dekat organisasi siswa kami</p>
-            </div>
+        <section id="tentang" class="section-content hidden px-4 py-6">
             <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
                 <h3 class="text-2xl font-semibold text-gray-800 mb-4">Sejarah Singkat</h3>
                 <p class="text-gray-600 leading-relaxed mb-6">Sekbid 2 mulai aktif menanamkan nilai-nilai etika, sopan santun, dan disiplin seiring kebutuhan pembinaan karakter remaja.</p>
@@ -336,18 +486,41 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8 mt-16">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <div class="flex items-center justify-center space-x-4 mb-4">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center">
-                    <img src="https://i.ibb.co/V0ZqpRFw/get-removebg-preview.png" alt="logo" class="w-6 h-6 object-contain">
-                </div>
-                <span class="text-lg font-semibold">OSIS Sekbid 2</span>
+    <!-- Modal Grafik Detail -->
+    <div id="grafik-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="grafik-detail-title" class="text-xl font-bold">Detail Kelas</h3>
+                <button onclick="closeGrafikDetail()" class="px-3 py-1 rounded-lg bg-red-600 text-white">Tutup</button>
             </div>
-            <p class="text-gray-400 text-sm">© 2025 OSIS Sekbid 2. Semua hak dilindungi.</p>
+            <div id="grafik-detail-body"></div>
         </div>
-    </footer>
+    </div>
+
+    <!-- Bottom Navigation (TikTok-like) -->
+    <nav class="bottom-nav" role="navigation" aria-label="Bottom navigation">
+        <button class="bottom-btn" data-target="beranda" id="nav-beranda-bottom">
+            <div class="text-xl">🏠</div>
+            <div>Beranda</div>
+        </button>
+        <button class="bottom-btn" data-target="posting" id="nav-posting-bottom">
+            <div class="text-xl">📢</div>
+            <div>Postingan</div>
+        </button>
+        <button class="bottom-btn" data-target="upload" id="nav-upload-bottom">
+            <div class="text-xl bg-blue-500 text-white rounded-full w-12 h-12 flex items-center justify-center transform -translate-y-2">＋</div>
+            <div class="mt-1">Upload</div>
+        </button>
+        <button class="bottom-btn" data-target="grafik" id="nav-grafik-bottom">
+            <div class="text-xl">📊</div>
+            <div>Grafik</div>
+        </button>
+        <button class="bottom-btn" data-target="tentang" id="nav-tentang-bottom">
+            <img src="https://i.ibb.co/V0ZqpRFw/get-removebg-preview.png" alt="logo" class="w-8 h-8 object-contain"><div>Profile</div>
+        </button>
+    </nav>
+
+    <footer style="height:72px;"></footer>
 
     <script>
     // ===== SUPABASE CONFIG =====
@@ -358,20 +531,19 @@
 
     // Admin credentials (demo) - pindahkan ke server di produksi
     const adminCredentials = {
-        'rama20': 'mica1620',
-        'mdamara2': 'apaajapw12',
+        'rama2': 'mica1620',
+        'damara2': 'apaajapw12',
         'mutiara2': 'logininaja12'
     };
 
-    // Simple admin state
-    function isAdminLoggedIn() { return localStorage.getItem('adminLoggedIn') === 'true'; }
+    // Admin state helpers
+    function isAdminLoggedIn() { return localStorage.getItem('adminLoggedIn') === 'true' && sessionStorage.getItem('role') === 'admin'; }
     function getAdminUsername() { return localStorage.getItem('adminUsername') || 'unknown'; }
 
-    // Modal functions
+    // Modal
     function showLoginModal() { document.getElementById('login-modal').classList.remove('hidden'); document.getElementById('admin-username').focus(); }
     function hideLoginModal() { document.getElementById('login-modal').classList.add('hidden'); document.getElementById('login-form').reset(); document.getElementById('login-error').classList.add('hidden'); }
 
-    // Login
     document.getElementById('login-form').addEventListener('submit', function(e) {
         e.preventDefault();
         const username = document.getElementById('admin-username').value;
@@ -380,6 +552,7 @@
         if (adminCredentials[username] && adminCredentials[username] === password) {
             localStorage.setItem('adminLoggedIn', 'true');
             localStorage.setItem('adminUsername', username);
+            sessionStorage.setItem('role', 'admin');
             updateAdminUI();
             hideLoginModal();
             showUploadStatus('Login berhasil! Selamat datang, ' + username + ' 👋', 'success');
@@ -392,6 +565,7 @@
     function logout() {
         localStorage.removeItem('adminLoggedIn');
         localStorage.removeItem('adminUsername');
+        sessionStorage.removeItem('role');
         updateAdminUI();
         showUploadStatus('Logout berhasil! 👋', 'success');
         showSection('beranda');
@@ -401,14 +575,18 @@
         const logged = isAdminLoggedIn();
         document.getElementById('login-btn').classList.toggle('hidden', logged);
         document.getElementById('logout-btn').classList.toggle('hidden', !logged);
-        document.getElementById('admin-status').classList.toggle('hidden', !logged);
         document.getElementById('upload-access-denied').classList.toggle('hidden', logged);
         document.getElementById('upload-form-container').classList.toggle('hidden', !logged);
-        // re-render for admin controls if needed
-        loadPosts();
+        loadPosts(); // refresh posts because admin state may alter actions
     }
 
-    // Navigation
+    // Navigation helpers (both top header and bottom nav)
+    function setActiveBottom(target) {
+        document.querySelectorAll('.bottom-btn').forEach(b => b.classList.remove('active'));
+        const btn = document.querySelector(`.bottom-btn[data-target="${target}"]`);
+        if (btn) btn.classList.add('active');
+    }
+
     function showSection(sectionName) {
         const sections = document.querySelectorAll('.section-content');
         sections.forEach(s => { s.classList.add('hidden'); s.classList.remove('fade-in'); });
@@ -416,19 +594,88 @@
         if (!target) return;
         target.classList.remove('hidden');
         setTimeout(() => target.classList.add('fade-in'), 10);
-        // update nav active
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('bg-blue-600','text-white');
-            btn.classList.add('text-gray-600','hover:bg-gray-100');
-        });
-        const activeBtn = document.getElementById('nav-' + sectionName);
-        if (activeBtn) { activeBtn.classList.remove('text-gray-600','hover:bg-gray-100'); activeBtn.classList.add('bg-blue-600','text-white'); }
-        if (sectionName === 'posting' || sectionName === 'upload') {
-            updateAdminUI();
+
+        // make sure feed auto-resizes
+        if (sectionName === 'beranda') {
+            // after a short delay, refresh observer to play current item
+            setTimeout(() => {
+                observeVideos(); // safe to call multiple times
+            }, 250);
+        }
+        setActiveBottom(sectionName);
+        // refresh data where needed
+        if (sectionName === 'posting' || sectionName === 'upload') updateAdminUI();
+        if (sectionName === 'grafik') {
+            const bulan = parseInt(document.getElementById('grafik-bulan-select').value || (new Date().getMonth()+1));
+            const tahun = parseInt(document.getElementById('grafik-tahun-select').value || (new Date().getFullYear()));
+            loadGrafikData(bulan, tahun);
         }
     }
+    // ===== Upload Grafik Siswa =====
+document.getElementById('grafik-upload-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  if (!isAdminLoggedIn()) {
+    alert('Hanya admin yang dapat menambah data grafik.');
+    return;
+  }
 
-    // ===== Posts data state =====
+  const nama = document.getElementById('grafik-nama').value.trim();
+  const jurusan = document.getElementById('grafik-jurusan').value;
+  const kelas = document.getElementById('grafik-kelas').value;
+  const subKelas = document.getElementById('grafik-sub-kelas').value;
+  const tanggal = document.getElementById('grafik-tanggal').value;
+
+  if (!nama || !jurusan || !kelas || !subKelas || !tanggal) {
+    showGrafikUploadStatus('Harap isi semua kolom!', 'error');
+    return;
+  }
+
+  const dateObj = new Date(tanggal);
+  const bulan = dateObj.getMonth() + 1;
+  const tahun = dateObj.getFullYear();
+
+  const newRecord = {
+    nama_siswa: nama,
+    jurusan,
+    kelas,
+    sub_kelas: subKelas,
+    total_telat: 1,
+    bulan,
+    tahun
+  };
+
+  try {
+    const { error } = await supabaseClient.from('kelas_lengkap').insert(newRecord);
+    if (error) throw error;
+    showGrafikUploadStatus('Data siswa berhasil ditambahkan ke grafik 🎉', 'success');
+    document.getElementById('grafik-upload-form').reset();
+    document.getElementById('grafik-tanggal').value = new Date().toISOString().split('T')[0];
+    const b = parseInt(document.getElementById('grafik-bulan-select').value);
+    const t = parseInt(document.getElementById('grafik-tahun-select').value);
+    await loadGrafikData(b, t);
+  } catch (err) {
+    console.error('Gagal simpan grafik:', err);
+    showGrafikUploadStatus('Gagal menyimpan data: ' + err.message, 'error');
+  }
+});
+
+function showGrafikUploadStatus(msg, type) {
+  const el = document.getElementById('grafik-upload-status');
+  el.className = `mt-4 text-center p-3 rounded-lg ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 4000);
+}
+
+    // wire bottom nav buttons
+    document.querySelectorAll('.bottom-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.getAttribute('data-target');
+            showSection(target);
+        });
+    });
+
+    // ===== Posts state =====
     let posts = [];
 
     async function loadPosts() {
@@ -436,13 +683,14 @@
             const { data, error } = await supabaseClient.from('posts').select('*').order('id', { ascending: false });
             if (error) throw error;
             posts = data || [];
-            renderPosts();
+            renderPosts(); // for posting grid
+            renderFeedVideos(); // for beranda (videos only)
         } catch (err) {
             console.error('Gagal load posts:', err);
         }
     }
 
-    // Render posts grid
+    // Render Posts grid (posting section)
     function renderPosts() {
         const container = document.getElementById('posts-grid');
         const count = document.getElementById('post-count');
@@ -470,35 +718,38 @@
         container.innerHTML = filtered.map(p => {
             const isImage = (p.file_type||'').startsWith('image');
             const isVideo = (p.file_type||'').startsWith('video');
-            const safeTitle = (p.title || '').replace(/"/g,'&quot;');
+            const safeTitle = escapeHtml(p.title || '');
             const uploader = p.uploader || '';
             const date = p.date || '';
-            const uploaded = p.upload_date || '';
             const fileName = p.file_name || '';
             const fileUrl = p.file_url || '';
             const fileSize = p.file_size ? `${p.file_size} MB` : '';
-            // Admin buttons
             const adminBtns = isAdminLoggedIn() ? `
                 <div class="flex items-center space-x-2 mt-3">
                   <button onclick="editPost(${p.id})" class="px-3 py-1 bg-yellow-400 text-xs rounded-lg">✏️ Edit</button>
                   <button onclick="deletePost(${p.id}, '${fileUrl.split('/').pop()}')" class="px-3 py-1 bg-red-600 text-white text-xs rounded-lg">🗑️ Hapus</button>
                 </div>` : '';
 
-            // Media HTML
             let mediaHtml = '';
             if (isImage) {
                 mediaHtml = `<img src="${fileUrl}" alt="${safeTitle}" class="w-full h-56 object-cover rounded-t-lg">`;
             } else if (isVideo) {
                 mediaHtml = `<video controls playsinline class="w-full h-56 object-cover rounded-t-lg" src="${fileUrl}"></video>`;
             } else {
-                // document / other
-                mediaHtml = `<div class="w-full h-56 flex items-center justify-center bg-gray-50 rounded-t-lg">
-                                <div class="text-center">
-                                  <div class="text-6xl">📄</div>
-                                  <div class="mt-2 text-sm text-gray-600">${fileName}</div>
-                                </div>
-                             </div>`;
-            }
+  let icon = "📄";
+  if (p.file_name.endsWith('.pdf')) icon = "📕";
+  if (p.file_name.match(/\.(xls|xlsx)$/i)) icon = "📊";
+  if (p.file_name.match(/\.(ppt|pptx)$/i)) icon = "📈";
+  if (p.file_name.match(/\.(doc|docx)$/i)) icon = "📝";
+  
+  mediaHtml = `
+    <div class="w-full h-56 flex flex-col items-center justify-center bg-gray-50 rounded-t-lg">
+      <div class="text-6xl mb-2">${icon}</div>
+      <div class="text-sm text-gray-600">${fileName}</div>
+    </div>
+  `;
+}
+
 
             return `
               <div class="bg-white rounded-xl overflow-hidden shadow-md p-0 media-card slide-in">
@@ -511,7 +762,7 @@
                     </div>
                     <div class="text-sm text-gray-500">${fileSize}</div>
                   </div>
-                  <p class="text-sm text-gray-600 mt-3 line-clamp-3">${p.description || ''}</p>
+                  <p class="text-sm text-gray-600 mt-3 line-clamp-3">${escapeHtml(p.description || '')}</p>
                   <div class="mt-4 flex items-center justify-between">
                     <div>
                       ${isImage || isVideo ? `<a href="${fileUrl}" target="_blank" class="text-blue-600 text-sm font-medium">🔍 Lihat</a>` : `<a href="${fileUrl}" target="_blank" class="text-blue-600 text-sm font-medium">📥 Download</a>`}
@@ -531,7 +782,162 @@
         window.postSearchTimeout = setTimeout(renderPosts, 300);
     });
 
-    // ===== Upload handling (single form for all types) =====
+    // ===== Video Feed (Beranda) rendering =====
+// ===== Video Feed (Beranda) rendering =====
+function renderFeedVideos() {
+  const feedEl = document.getElementById('video-feed');
+  const empty = document.getElementById('empty-feed');
+  const videoPosts = (posts || []).filter(p => (p.file_type || '').startsWith('video')).sort((a,b)=> (b.id||0)-(a.id||0));
+  feedEl.querySelectorAll('.video-card').forEach(n => n.remove());
+
+  if (!videoPosts || videoPosts.length === 0) {
+    empty.classList.remove('hidden');
+    return;
+  } else empty.classList.add('hidden');
+
+  videoPosts.forEach((p) => {
+    const fileUrl = p.file_url || '';
+    const title = escapeHtml(p.title || '');
+    const desc = escapeHtml(p.description || '');
+    const postedBy = escapeHtml(p.uploader || '');
+
+    const card = document.createElement('div');
+    card.className = 'video-card';
+    card.dataset.postId = p.id;
+
+    card.innerHTML = `
+      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+        <video preload="metadata" playsinline muted class="feed-video" src="${fileUrl}" webkit-playsinline></video>
+        <div class="video-overlay-icon" id="pause-icon"></div>
+      </div>
+
+      <div class="mini-muted">${postedBy ? "@" + postedBy : "OSIS"}</div>
+
+      <div class="video-controls" aria-hidden="true">
+        <div class="vc-btn like-btn" data-action="like">❤️</div>
+        <div class="vc-btn comment-btn" data-action="comment">💬</div>
+        <div class="vc-btn share-btn" data-action="share">🔗</div>
+        <div class="vc-btn" data-action="mute">🔈</div>
+      </div>
+
+      <div class="caption-box">
+        <div class="caption-title">${title}</div>
+        <div class="caption-desc">${desc}</div>
+      </div>
+
+      <div class="video-progress"><div class="video-progress-filled"></div></div>
+    `;
+
+    feedEl.appendChild(card);
+
+    setTimeout(() => {
+      const video = card.querySelector('video');
+      const pauseIcon = card.querySelector('#pause-icon');
+      const progressBar = card.querySelector('.video-progress');
+      const progressFill = card.querySelector('.video-progress-filled');
+      const muteBtn = card.querySelector('[data-action="mute"]');
+      const likeBtn = card.querySelector('.like-btn');
+      const commentBtn = card.querySelector('.comment-btn');
+      const shareBtn = card.querySelector('.share-btn');
+
+      // Klik video untuk play/pause
+      card.addEventListener('click', (ev) => {
+        if (ev.target.closest('.vc-btn')) return;
+
+        if (video.paused) {
+          video.play();
+          pauseIcon.classList.remove('visible');
+        } else {
+          video.pause();
+          pauseIcon.classList.add('visible');
+          setTimeout(() => pauseIcon.classList.remove('visible'), 800);
+        }
+      });
+
+      // Update progress bar
+      video.addEventListener('timeupdate', () => {
+        const percent = (video.currentTime / video.duration) * 100;
+        progressFill.style.width = `${percent}%`;
+      });
+
+      // Klik progress bar → ubah waktu video
+      progressBar.addEventListener('click', (e) => {
+        const rect = progressBar.getBoundingClientRect();
+        const pos = (e.clientX - rect.left) / rect.width;
+        video.currentTime = pos * video.duration;
+      });
+
+      // Mute/unmute
+      muteBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        video.muted = !video.muted;
+        muteBtn.textContent = video.muted ? '🔈' : '🔊';
+      });
+
+      // Like
+      likeBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        likeBtn.classList.toggle('liked');
+        likeBtn.style.color = likeBtn.classList.contains('liked') ? 'red' : 'white';
+      });
+
+      // Komentar modal
+      commentBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        openCommentModal(p.id);
+      });
+
+      // Share
+      shareBtn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        try {
+          await navigator.clipboard.writeText(fileUrl);
+          alert("🔗 Link video telah disalin!");
+        } catch {
+          alert("Gagal menyalin link, salin manual: " + fileUrl);
+        }
+      });
+    }, 50);
+  });
+
+  setTimeout(() => observeVideos(), 80);
+}
+
+    // Intersection Observer to auto-play only the currently-centered video (gentle behavior)
+    let videoObserver = null;
+    function observeVideos() {
+        const videos = Array.from(document.querySelectorAll('.feed-video'));
+        if (videoObserver) videoObserver.disconnect();
+
+        const options = {
+            root: document.getElementById('video-feed'),
+            rootMargin: '0px',
+            threshold: 0.65 // play when 65% visible
+        };
+
+        videoObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const vid = entry.target;
+                if (entry.isIntersecting) {
+                    // play softly, keep muted by default
+                    // we DON'T force unmute; user must tap mute control to hear
+                    vid.play().catch(()=>{ /* autoplay may be blocked */ });
+                } else {
+                    // pause videos not in focus
+                    vid.pause();
+                    vid.currentTime = Math.min(vid.currentTime, vid.duration || vid.currentTime);
+                }
+            });
+        }, options);
+
+        videos.forEach(v => {
+            // ensure videos start paused before observation
+            v.pause();
+            videoObserver.observe(v);
+        });
+    }
+
+    // ===== Upload handling (sama seperti sebelumnya) =====
     const postInput = document.getElementById('post-input');
     postInput.addEventListener('change', function(e) {
         const label = document.getElementById('post-input-label');
@@ -542,80 +948,144 @@
             label.textContent = 'Klik untuk memilih file';
         }
     });
+    // ===== SWITCH TAB UPLOAD FILES / GRAFIK =====
+const tabUploadFiles = document.getElementById('tab-upload-files');
+const tabUploadGrafik = document.getElementById('tab-upload-grafik');
+const tabFilesContainer = document.getElementById('tab-files-container');
+const tabGrafikContainer = document.getElementById('tab-grafik-container');
+
+tabUploadFiles.addEventListener('click', () => {
+  tabUploadFiles.classList.add('bg-blue-600', 'text-white');
+  tabUploadFiles.classList.remove('bg-gray-100', 'text-gray-700');
+  tabUploadGrafik.classList.remove('bg-blue-600', 'text-white');
+  tabUploadGrafik.classList.add('bg-gray-100', 'text-gray-700');
+
+  tabFilesContainer.classList.remove('hidden');
+  tabGrafikContainer.classList.add('hidden');
+});
+
+tabUploadGrafik.addEventListener('click', () => {
+  tabUploadGrafik.classList.add('bg-blue-600', 'text-white');
+  tabUploadGrafik.classList.remove('bg-gray-100', 'text-gray-700');
+  tabUploadFiles.classList.remove('bg-blue-600', 'text-white');
+  tabUploadFiles.classList.add('bg-gray-100', 'text-gray-700');
+
+  tabFilesContainer.classList.add('hidden');
+  tabGrafikContainer.classList.remove('hidden');
+});
 
     document.getElementById('universal-upload-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        if (!isAdminLoggedIn()) { alert('Hanya admin yang dapat mengupload. Silakan login.'); return; }
-        const fileEl = document.getElementById('post-input');
-        if (!fileEl.files || fileEl.files.length === 0) { showUploadStatus('Silakan pilih file terlebih dahulu!', 'error'); return; }
-        const file = fileEl.files[0];
-        const title = document.getElementById('post-title').value || 'Postingan OSIS';
-        const description = document.getElementById('post-description').value || '';
-        const date = document.getElementById('post-date').value || new Date().toISOString().split('T')[0];
-        const tagsRaw = document.getElementById('post-tags').value || '';
-        const tags = tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0);
+  e.preventDefault();
+  if (!isAdminLoggedIn()) { alert('Hanya admin yang dapat mengupload. Silakan login.'); return; }
 
-        // Validate file size (limit example 150MB) - adjust as needed
-        const maxMB = 150;
-        if ((file.size / 1024 / 1024) > maxMB) { showUploadStatus(`File terlalu besar. Maks ${maxMB} MB.`, 'error'); return; }
+  const fileEl = document.getElementById('post-input');
+  if (!fileEl.files || fileEl.files.length === 0) {
+    showUploadStatus('Silakan pilih file terlebih dahulu!', 'error');
+    return;
+  }
 
-        const fileExt = file.name.split('.').pop().toLowerCase();
-        const fileType = file.type || (fileExt === 'pdf' ? 'application/pdf' : '');
+  const file = fileEl.files[0];
+  const title = document.getElementById('post-title').value || 'Postingan OSIS';
+  const description = document.getElementById('post-description').value || '';
+  const date = document.getElementById('post-date').value || new Date().toISOString().split('T')[0];
+  const tagsRaw = document.getElementById('post-tags').value || '';
+  const tags = tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0);
 
-        // create unique filename
-        const fileName = `${Date.now()}_${file.name.replace(/\s+/g,'_')}`;
+  // Validasi ukuran
+  const maxMB = 150;
+  if ((file.size / 1024 / 1024) > maxMB) {
+    showUploadStatus(`File terlalu besar. Maks ${maxMB} MB.`, 'error');
+    return;
+  }
 
-        // show loading
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        showUploadLoading(true, submitBtn);
+  let fileType = file.type || '';
+const fileExt = file.name.split('.').pop().toLowerCase();
 
-        try {
-            // upload to Supabase storage
-            const { error: uploadError } = await supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file, { cacheControl: '3600', upsert: false });
-            if (uploadError) throw uploadError;
-            const { data: publicData } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName);
-            const publicUrl = publicData.publicUrl;
+// fallback jika browser tidak beri MIME type
+if (!fileType) {
+  const mimeMap = {
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  };
+  fileType = mimeMap[fileExt] || 'application/octet-stream';
+}
 
-            // determine category (image, video, dokumen)
-            let category = 'lainnya';
-            if ((fileType||'').startsWith('image')) category = 'image';
-            else if ((fileType||'').startsWith('video')) category = 'video';
-            else category = 'dokumen';
 
-            // file size MB
-            const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+  // Pilih bucket otomatis
+  let bucketTarget = 'uploads';
+  if (fileExt.match(/(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i)) {
+    bucketTarget = 'dokumen';
+  }
 
-            // insert metadata to table 'posts' (schema public by default)
-            const insertObj = {
-                title,
-                description,
-                category,
-                file_url: publicUrl,
-                file_type: fileType,
-                file_name: file.name,
-                date,
-                upload_date: new Date().toISOString(),
-                file_size: fileSizeMB,
-                uploader: getAdminUsername(),
-                tags
-            };
+  const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
 
-            const { error: insertError } = await supabaseClient.from('posts').insert(insertObj);
-            if (insertError) throw insertError;
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  showUploadLoading(true, submitBtn);
 
-            // reset form
-            document.getElementById('universal-upload-form').reset();
-            document.getElementById('post-input-label').textContent = 'Klik untuk memilih file';
-            showUploadStatus('File berhasil diupload ke server! 🎉', 'success');
-            await loadPosts();
-        } catch (err) {
-            console.error('Upload gagal:', err);
-            showUploadStatus('Gagal upload: ' + (err.message || err), 'error');
-        } finally {
-            showUploadLoading(false, submitBtn);
-        }
-    });
+  try {
+    // upload ke bucket sesuai tipe
+    const { error: uploadError } = await supabaseClient
+  .storage
+  .from(bucketTarget)
+  .upload(fileName, file, {
+    cacheControl: '3600',
+    upsert: false,
+    contentType: fileType, // 🧩 tambahkan ini
+  });
 
+
+    if (uploadError) throw uploadError;
+
+    // ambil URL publik dari bucket yang sama
+    const { data: publicData } = supabaseClient
+      .storage
+      .from(bucketTarget)
+      .getPublicUrl(fileName);
+    const publicUrl = publicData.publicUrl;
+
+    // tentukan kategori file
+    let category = 'dokumen';
+    if ((fileType || '').startsWith('image')) category = 'image';
+    else if ((fileType || '').startsWith('video')) category = 'video';
+
+    const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+
+    const insertObj = {
+      title,
+      description,
+      category,
+      file_url: publicUrl,
+      file_type: fileType,
+      file_name: file.name,
+      date,
+      upload_date: new Date().toISOString(),
+      file_size: fileSizeMB,
+      uploader: getAdminUsername(),
+      tags
+    };
+
+    const { error: insertError } = await supabaseClient.from('posts').insert(insertObj);
+    if (insertError) throw insertError;
+
+    document.getElementById('universal-upload-form').reset();
+    document.getElementById('post-input-label').textContent = 'Klik untuk memilih file';
+    showUploadStatus('File berhasil diupload ke server! 🎉', 'success');
+    await loadPosts();
+    showSection('posting');
+  } catch (err) {
+    console.error('Upload gagal:', err);
+    showUploadStatus('Gagal upload: ' + (err.message || err), 'error');
+  } finally {
+    showUploadLoading(false, submitBtn);
+  }
+});
+
+    // helpers for upload status
     function showUploadStatus(message, type) {
         const statusDiv = document.getElementById('upload-status');
         statusDiv.className = `mt-4 text-center p-3 rounded-lg ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
@@ -636,57 +1106,348 @@
         }
     }
 
-    // ===== Edit / Delete (admin) =====
-    async function deletePost(postId, fileName) {
-        if (!confirm('Yakin ingin menghapus posting ini?')) return;
+    // ===== Delete functions (posts & kelas_lengkap) =====
+    async function deleteSiswaGrafik(id) {
+        if (!confirm('Yakin ingin menghapus data siswa ini?')) return;
         try {
-            const { error: delDbErr } = await supabaseClient.from('posts').delete().eq('id', postId);
-            if (delDbErr) throw delDbErr;
-            // remove file from storage (best-effort)
-            try {
-                const { error: delStorErr } = await supabaseClient.storage.from(BUCKET_NAME).remove([fileName]);
-                if (delStorErr) console.warn('Gagal hapus file storage:', delStorErr.message);
-            } catch(e) { console.warn(e); }
-            await loadPosts();
-            showUploadStatus('Posting berhasil dihapus.', 'success');
+            const { error } = await supabaseClient.from('kelas_lengkap').delete().eq('id', id);
+            if (error) throw error;
+            showGrafikUploadStatus('Data siswa berhasil dihapus.', 'success');
+            const b = parseInt(document.getElementById('grafik-bulan-select').value);
+            const t = parseInt(document.getElementById('grafik-tahun-select').value);
+            await loadGrafikData(b, t);
+            if (!document.getElementById('grafik-detail-modal').classList.contains('hidden')) {
+                const lastTitle = document.getElementById('grafik-detail-title').textContent.split(' — ')[0];
+                openGrafikDetailModal(lastTitle, b, t);
+            }
         } catch (err) {
             console.error(err);
-            alert('Gagal menghapus posting: ' + (err.message || err));
+            showGrafikUploadStatus('Gagal menghapus data: ' + (err.message || err), 'error');
         }
     }
 
-    function editPost(id) {
-        const post = posts.find(p => p.id === id);
-        if (!post) return alert('Posting tidak ditemukan');
-        const newTitle = prompt('Ubah judul:', post.title);
-        if (newTitle === null) return;
-        const newDesc = prompt('Ubah deskripsi:', post.description || '');
-        if (newDesc === null) return;
-        (async () => {
-            try {
-                const { error } = await supabaseClient.from('posts').update({ title: newTitle, description: newDesc }).eq('id', id);
-                if (error) throw error;
-                showUploadStatus('Posting berhasil diperbarui!', 'success');
-                await loadPosts();
-            } catch (err) {
-                console.error(err);
-                showUploadStatus('Gagal memperbarui posting: ' + (err.message || err), 'error');
-            }
-        })();
+    async function deletePost(id, fileName) {
+      if (!isAdminLoggedIn()) { alert('Hanya admin yang bisa menghapus.'); return; }
+      if (!confirm('Yakin ingin menghapus postingan ini?')) return;
+      try {
+        const { error: delFileErr } = await supabaseClient.storage.from(BUCKET_NAME).remove([fileName]);
+        if (delFileErr) console.warn('Gagal hapus file storage:', delFileErr.message);
+        const { error: delErr } = await supabaseClient.from('posts').delete().eq('id', id);
+        if (delErr) throw delErr;
+        showUploadStatus('Postingan berhasil dihapus.', 'success');
+        await loadPosts();
+      } catch (err) {
+        console.error('Gagal hapus posting:', err);
+        showUploadStatus('Gagal menghapus posting: ' + err.message, 'error');
+      }
     }
 
-    // ===== Init =====
+    // ===== Edit siswa dialog same as before =====
+    async function openEditSiswaDialog(rec) {
+        const newName = prompt('Ubah nama siswa:', rec.nama_siswa);
+        if (newName === null) return;
+        const newJurusan = prompt('Ubah jurusan (TJKT/TO/AKL/MPLB):', rec.jurusan);
+        if (newJurusan === null) return;
+        const newKelas = prompt('Ubah kelas (10/11/12):', rec.kelas);
+        if (newKelas === null) return;
+        const newTotal = prompt('Ubah total telat (angka):', String(rec.total_telat || 1));
+        if (newTotal === null) return;
+        const upd = {
+            nama_siswa: newName.trim(),
+            jurusan: newJurusan.trim(),
+            kelas: newKelas.trim(),
+            total_telat: parseInt(newTotal) || 0
+        };
+        try {
+            const { error } = await supabaseClient.from('kelas_lengkap').update(upd).eq('id', rec.id);
+            if (error) throw error;
+            showGrafikUploadStatus('Data siswa berhasil diperbarui.', 'success');
+            const b = parseInt(document.getElementById('grafik-bulan-select').value);
+            const t = parseInt(document.getElementById('grafik-tahun-select').value);
+            await loadGrafikData(b, t);
+            const lastTitle = document.getElementById('grafik-detail-title').textContent.split(' — ')[0];
+            if (!document.getElementById('grafik-detail-modal').classList.contains('hidden')) {
+                openGrafikDetailModal(lastTitle, b, t);
+            }
+        } catch (err) {
+            console.error(err);
+            showGrafikUploadStatus('Gagal memperbarui data: ' + (err.message || err), 'error');
+        }
+    }
+
+    // ===== Grafik logic (same as before) =====
+    let grafikChart = null;
+
+    function bulanOptionsInit() {
+        const bulanSelect = document.getElementById('grafik-bulan-select');
+        const tahunSelect = document.getElementById('grafik-tahun-select');
+        const bulanNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        bulanSelect.innerHTML = bulanNames.map((b,i) => `<option value="${i+1}">${b}</option>`).join('');
+        const now = new Date();
+        bulanSelect.value = now.getMonth() + 1;
+
+        const currentYear = now.getFullYear();
+        let years = [];
+        for (let y = currentYear - 2; y <= currentYear + 1; y++) years.push(y);
+        tahunSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+        tahunSelect.value = currentYear;
+    }
+
+    async function loadGrafikData(bulan, tahun) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('kelas_lengkap')
+            .select('*')
+            .eq('bulan', bulan)
+            .eq('tahun', tahun);
+
+        if (error) throw error;
+        const records = data || [];
+
+        // 🔹 Gabungkan siswa dengan nama, kelas, jurusan, sub_kelas sama
+        const merged = {};
+        records.forEach(r => {
+            const key = `${r.nama_siswa}_${r.kelas}_${r.jurusan}_${r.sub_kelas || ''}`;
+            if (!merged[key]) {
+                merged[key] = { ...r };
+            } else {
+                merged[key].total_telat = (merged[key].total_telat || 0) + (r.total_telat || 0);
+            }
+        });
+
+        // 🔹 Hasil akhir: array unik
+        const mergedRecords = Object.values(merged);
+
+        // 🔹 Hitung total per kelas untuk grafik
+        const agg = {};
+        mergedRecords.forEach(r => {
+            const kelasLengkap = `${r.kelas} ${r.jurusan} ${r.sub_kelas || ''}`.trim();
+            if (!agg[kelasLengkap]) agg[kelasLengkap] = 0;
+            agg[kelasLengkap] += Number(r.total_telat || 1);
+        });
+
+        const labels = Object.keys(agg);
+        const values = Object.values(agg);
+        const jurusanList = labels.map(lbl => {
+            if (lbl.includes('TJKT')) return 'TJKT';
+            if (lbl.includes('TO')) return 'TO';
+            if (lbl.includes('MPLB')) return 'MPLB';
+            if (lbl.includes('AKL')) return 'AKL';
+            return 'LAINNYA';
+        });
+
+        // 🔹 Simpan hasil merge untuk modal detail juga
+        window.grafikMergedRecords = mergedRecords;
+
+        renderGrafikChart(labels, values, jurusanList, bulan, tahun);
+    } catch (err) {
+        console.error('Gagal load grafik:', err);
+    }
+}
+
+    function renderGrafikChart(labels, values, jurusanList, bulan, tahun) {
+        const ctx = document.getElementById('grafik-canvas').getContext('2d');
+        if (grafikChart) {
+            grafikChart.destroy();
+            grafikChart = null;
+        }
+
+        const colorMap = {
+            TJKT: '#3b82f6',
+            TO: '#000000',
+            MPLB: '#16a34a',
+            AKL: '#9ca3af'
+        };
+        const backgroundColors = jurusanList.map(j => colorMap[j] || '#94a3b8');
+
+        grafikChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: `Total Telat — ${bulan}/${tahun}`,
+                    data: values,
+                    backgroundColor: backgroundColors,
+                    borderRadius: 6,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                return `${ctx.label}: ${ctx.parsed.y} siswa`;
+                            }
+                        }
+                    }
+                },
+                onClick: async (evt, activeEls) => {
+                    if (!activeEls || activeEls.length === 0) return;
+                    const idx = activeEls[0].index;
+                    const kelasLengkap = grafikChart.data.labels[idx];
+                    openGrafikDetailModal(kelasLengkap, bulan, tahun);
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Kelas Lengkap' },
+                        ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 }
+                    },
+                    y: {
+                        title: { display: true, text: 'Total Telat' },
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
+                }
+            }
+        });
+    }
+
+    async function openGrafikDetailModal(kelas, bulan, tahun) {
+    try {
+        const records = (window.grafikMergedRecords || []).filter(r => {
+            const label = `${r.kelas} ${r.jurusan} ${r.sub_kelas || ''}`.trim();
+            return label === String(kelas) || label.includes(String(kelas));
+        });
+
+        const bulanText = document.getElementById('grafik-bulan-select').options[document.getElementById('grafik-bulan-select').selectedIndex].text;
+        const title = `${kelas} — ${bulanText} ${tahun}`;
+        document.getElementById('grafik-detail-title').textContent = title;
+
+        if (records.length === 0) {
+            document.getElementById('grafik-detail-body').innerHTML = `<div class="p-4 text-center text-gray-500">Tidak ada data siswa.</div>`;
+        } else {
+            let rows = records.map(r => {
+                const adminCols = isAdminLoggedIn() ? `<td class="py-2 px-3 text-center">
+                    <button onclick='openEditSiswaDialog(${JSON.stringify(escapeHtmlObj(r))})' class="px-2 py-1 mr-2 bg-yellow-400 rounded text-xs">✏️</button>
+                    <button onclick="deleteSiswaGrafik(${r.id})" class="px-2 py-1 bg-red-600 text-white rounded text-xs">🗑️</button>
+                </td>` : `<td class="py-2 px-3 text-center">-</td>`;
+
+                return `<tr class="border-b">
+                    <td class="py-2 px-3">${escapeHtml(r.nama_siswa)}</td>
+                    <td class="py-2 px-3 text-center">${escapeHtml(r.jurusan)}</td>
+                    <td class="py-2 px-3 text-center">${escapeHtml(r.kelas)}</td>
+                    <td class="py-2 px-3 text-center">${r.total_telat || 0}</td>
+                    ${adminCols}
+                </tr>`;
+            }).join('');
+            const headerExtra = isAdminLoggedIn() ? '<th class="py-2 px-3 text-center">Aksi</th>' : '<th class="py-2 px-3 text-center">—</th>';
+            document.getElementById('grafik-detail-body').innerHTML = `
+                <div class="overflow-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="py-2 px-3">Nama Siswa</th>
+                                <th class="py-2 px-3 text-center">Jurusan</th>
+                                <th class="py-2 px-3 text-center">Kelas</th>
+                                <th class="py-2 px-3 text-center">Total Telat</th>
+                                ${headerExtra}
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>`;
+        }
+
+        document.getElementById('grafik-detail-modal').classList.remove('hidden');
+    } catch (err) {
+        console.error('Gagal ambil detail grafik:', err);
+    }
+}
+
+    function closeGrafikDetail() {
+        document.getElementById('grafik-detail-modal').classList.add('hidden');
+    }
+
+    // small helpers
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]); });
+    }
+    function escapeHtmlObj(obj) {
+        const out = {};
+        Object.keys(obj).forEach(k => {
+            const v = obj[k];
+            out[k] = (typeof v === 'string') ? v.replace(/"/g, '\\"').replace(/\n/g,'\\n') : v;
+        });
+        return out;
+    }
+
+    // refresh grafics selectors
+    document.getElementById('refresh-grafik').addEventListener('click', () => {
+        const b = parseInt(document.getElementById('grafik-bulan-select').value);
+        const t = parseInt(document.getElementById('grafik-tahun-select').value);
+        loadGrafikData(b,t);
+    });
+    document.getElementById('grafik-bulan-select').addEventListener('change', () => {
+        const b = parseInt(document.getElementById('grafik-bulan-select').value);
+        const t = parseInt(document.getElementById('grafik-tahun-select').value);
+        loadGrafikData(b,t);
+    });
+    document.getElementById('grafik-tahun-select').addEventListener('change', () => {
+        const b = parseInt(document.getElementById('grafik-bulan-select').value);
+        const t = parseInt(document.getElementById('grafik-tahun-select').value);
+        loadGrafikData(b,t);
+    });
+
+    // init
     (async function init() {
-        // default date field value
         document.getElementById('post-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('grafik-tanggal').value = new Date().toISOString().split('T')[0];
+
+        bulanOptionsInit();
+
         await loadPosts();
         updateAdminUI();
         showSection('beranda');
     })();
+    // ===== AUTO SET SUB KELAS BERDASARKAN KELAS + JURUSAN =====
+const kelasSelect = document.getElementById('grafik-kelas');
+const jurusanSelect = document.getElementById('grafik-jurusan');
+const subKelasSelect = document.getElementById('grafik-sub-kelas');
 
-    // close modal on outside click or ESC
+function updateSubKelasOptions() {
+  const kelas = kelasSelect.value;
+  const jurusan = jurusanSelect.value;
+  let jumlah = 1;
+
+  // aturan jumlah sub kelas per kombinasi
+  const aturan = {
+    '12_TJKT': 5,
+    '12_MPLB': 3,
+    '12_AKL': 1,
+    '12_TO': 3,
+    '11_TJKT': 4,
+    '11_MPLB': 3,
+    '11_TO': 3,
+    '11_AKL': 1,
+    '10_TJKT': 3,
+    '10_MPLB': 3,
+    '10_AKL': 1,
+    '10_TO': 3
+  };
+
+  const key = `${kelas}_${jurusan}`;
+  if (aturan[key]) jumlah = aturan[key];
+
+  // buat ulang opsi sub kelas sesuai jumlah
+  let html = '<option value="">Pilih</option>';
+  for (let i = 1; i <= jumlah; i++) {
+    html += `<option value="${i}">${i}</option>`;
+  }
+  subKelasSelect.innerHTML = html;
+}
+
+// pas kelas atau jurusan berubah → update sub kelas
+kelasSelect.addEventListener('change', updateSubKelasOptions);
+jurusanSelect.addEventListener('change', updateSubKelasOptions);
+
+    // close modals on outside click / ESC
     document.getElementById('login-modal').addEventListener('click', function(e) { if (e.target === this) hideLoginModal(); });
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape') hideLoginModal(); });
+    document.getElementById('grafik-detail-modal').addEventListener('click', function(e) { if (e.target === this) closeGrafikDetail(); });
 
     </script>
 </body>
